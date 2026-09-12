@@ -607,7 +607,7 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
                                         employee_id, status, remark, year_of_purchase, kva, warranty_expiry, last_update
                                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))`;
 
-                                    const contractualUser = a.contractual_user_name || employee.physical_holder || employee.contractual_user_name || '';
+                                    const contractualUser = a.contractual_user_name || employee.physical_holder || employee.contractual_user_name || employee.name || '';
                                     const itemIp = (a.ip_address && a.ip_address.trim()) ? a.ip_address.trim() : (ip_address || '');
                                     const itemHostname = (a.hostname && a.hostname.trim()) ? a.hostname.trim() : (hostname || '');
 

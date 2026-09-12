@@ -610,16 +610,21 @@ function checkAssetType() {
 
     const isKbOrMouse = name.includes('keyboard') || name.includes('mouse');
     const isUps = name.includes('ups');
+    const isLaptop = name.includes('laptop');
+    const isAio = name.includes('aio') || name.includes('all-in-one') || name.includes('all in one');
+    const isPcOrDesktop = (name.includes('pc') || name.includes('desktop') || name.includes('computer')) && !isAio;
 
-    // Charger — laptops only
-    charger.classList.toggle('hidden', !name.includes('laptop'));
-    charger.classList.toggle('input-highlight', name.includes('laptop'));
+    // Charger / Power Adapter — Laptops & AIO
+    const showPowerAdapter = isLaptop || isAio;
+    charger.classList.toggle('hidden', !showPowerAdapter);
+    charger.placeholder = isAio ? "Power Adapter Serial No." : "Charger Serial No.";
+    if (showPowerAdapter) charger.classList.add('input-highlight');
+    else charger.classList.remove('input-highlight');
 
-    // Monitor fields — PC/AIO/Desktop
-    const showMonitor = name.includes('pc') || name.includes('desktop') || name.includes('computer') || name.includes('aio');
-    monMake.classList.toggle('hidden', !showMonitor);
-    monSerial.classList.toggle('hidden', !showMonitor);
-    if (showMonitor) {
+    // Monitor fields — PC/Desktop only (NOT AIO)
+    monMake.classList.toggle('hidden', !isPcOrDesktop);
+    monSerial.classList.toggle('hidden', !isPcOrDesktop);
+    if (isPcOrDesktop) {
         monMake.classList.add('input-highlight');
         monSerial.classList.add('input-highlight');
     } else {
@@ -627,8 +632,8 @@ function checkAssetType() {
         monSerial.classList.remove('input-highlight');
     }
 
-    // Keyboard/Mouse makes — PC/Desktop/Laptop
-    const showKbMouse = name.includes('pc') || name.includes('desktop') || name.includes('computer') || name.includes('laptop') || name.includes('aio');
+    // Keyboard/Mouse makes — PC/Desktop/Laptop/AIO
+    const showKbMouse = isPcOrDesktop || isLaptop || isAio;
     keyboardMake.classList.toggle('hidden', !showKbMouse);
     mouseMake.classList.toggle('hidden', !showKbMouse);
 
@@ -2166,7 +2171,8 @@ function buildWizardAssetForms() {
         const catLower = cat.toLowerCase();
         const hasNetAndTag = supportsNetworkAndTag(cat);
         const isLaptop = catLower.includes('laptop');
-        const isPcAio = catLower.includes('pc') || catLower.includes('aio');
+        const isAio = catLower.includes('aio') || catLower.includes('all-in-one');
+        const isPc = (catLower.includes('pc') || catLower.includes('desktop')) && !isAio;
         const isKbOrMouse = catLower.includes('keyboard') || catLower.includes('mouse');
         const isUps = catLower.includes('ups');
 
@@ -2184,7 +2190,7 @@ function buildWizardAssetForms() {
                 </div>
                 <div>
                     <label class="form-label" style="font-size:0.78rem;">Make</label>
-                    <input class="form-input wiz-make" data-idx="${i}" placeholder="e.g. Dell / HP / Logitech">
+                    <input class="form-input wiz-make" data-idx="${i}" placeholder="e.g. Dell / HP / Lenovo">
                 </div>
 
                 ${isUps ? `
@@ -2208,13 +2214,13 @@ function buildWizardAssetForms() {
                     <input class="form-input wiz-warranty" data-idx="${i}" id="wiz-warranty-${i}" placeholder="e.g. 2026-12-31">
                 </div>
 
-                ${isLaptop ? `
+                ${(isLaptop || isAio) ? `
                 <div>
-                    <label class="form-label" style="font-size:0.78rem;">Charger Serial</label>
-                    <input class="form-input wiz-charger" data-idx="${i}" id="wiz-charger-${i}" placeholder="e.g. CHG-98765">
+                    <label class="form-label" style="font-size:0.78rem;">${isAio ? 'Power Adapter Serial' : 'Charger Serial'}</label>
+                    <input class="form-input wiz-charger" data-idx="${i}" id="wiz-charger-${i}" placeholder="${isAio ? 'e.g. ADAPT-98765' : 'e.g. CHG-98765'}">
                 </div>` : ''}
 
-                ${isPcAio ? `
+                ${isPc ? `
                 <div>
                     <label class="form-label" style="font-size:0.78rem;">Monitor Make</label>
                     <input class="form-input wiz-monmake" data-idx="${i}" id="wiz-monmake-${i}" placeholder="e.g. Dell">

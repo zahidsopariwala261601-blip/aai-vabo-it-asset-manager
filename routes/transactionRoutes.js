@@ -168,20 +168,19 @@ router.post('/', authenticateToken, validateTransaction, (req, res, next) => {
                         ? d.contractual_user_name
                         : (d.employee_name || '');
 
-                    let updateFailed = false;
-                    let completedCount = 0;
                     const totalUpdates = d.asset_ids.length;
 
-                    if (totalUpdates === 0) {
-                        return db.run('COMMIT', (commitErr) => {
-                            if (commitErr) {
-                                return db.run('ROLLBACK', () => next(commitErr));
-                            }
-                            res.status(201).json({ id: transId, message: 'Transaction recorded & assets updated' });
-                        });
-                    }
+                    const updateNext = (index) => {
+                        if (index >= totalUpdates) {
+                            return db.run('COMMIT', (commitErr) => {
+                                if (commitErr) {
+                                    return db.run('ROLLBACK', () => next(commitErr));
+                                }
+                                res.status(201).json({ id: transId, message: 'Transaction recorded & assets updated' });
+                            });
+                        }
 
-                    d.asset_ids.forEach(id => {
+                        const id = d.asset_ids[index];
                         const query = d.type === 'handover' ? handoverSql : takeoverSql;
                         const updateParams = d.type === 'handover' ? [
                             d.employee_name,
@@ -195,26 +194,17 @@ router.post('/', authenticateToken, validateTransaction, (req, res, next) => {
                         ] : [id];
 
                         db.run(query, updateParams, function (uErr) {
-                            if (updateFailed) return;
                             if (uErr) {
-                                updateFailed = true;
                                 return db.run('ROLLBACK', () => next(uErr));
                             }
                             if (this.changes === 0) {
-                                updateFailed = true;
                                 return db.run('ROLLBACK', () => res.status(404).json({ error: 'One or more specified assets not found' }));
                             }
-                            completedCount++;
-                            if (completedCount === totalUpdates) {
-                                db.run('COMMIT', (commitErr) => {
-                                    if (commitErr) {
-                                        return db.run('ROLLBACK', () => next(commitErr));
-                                    }
-                                    res.status(201).json({ id: transId, message: 'Transaction recorded & assets updated' });
-                                });
-                            }
+                            updateNext(index + 1);
                         });
-                    });
+                    };
+
+                    updateNext(0);
                 });
             });
         });
