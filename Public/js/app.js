@@ -2199,6 +2199,15 @@ function buildWizardAssetForms() {
                     <input class="form-input wiz-model" data-idx="${i}" placeholder="e.g. Latitude 5540">
                 </div>` : ''}
 
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">Year of Purchase</label>
+                    <input type="number" class="form-input wiz-year" data-idx="${i}" id="wiz-year-${i}" placeholder="e.g. 2024" min="2000" max="2030">
+                </div>
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">Warranty Expiry</label>
+                    <input class="form-input wiz-warranty" data-idx="${i}" id="wiz-warranty-${i}" placeholder="e.g. 2026-12-31">
+                </div>
+
                 ${isLaptop ? `
                 <div>
                     <label class="form-label" style="font-size:0.78rem;">Charger Serial</label>
@@ -2254,6 +2263,8 @@ function buildWizardReview() {
         const make = document.querySelector(`.wiz-make[data-idx="${i}"]`)?.value.trim() || '';
         const model = document.querySelector(`.wiz-model[data-idx="${i}"]`)?.value.trim() || '';
         const kva = document.querySelector(`#wiz-kva-${i}`)?.value.trim() || '';
+        const year = document.querySelector(`#wiz-year-${i}`)?.value.trim() || '';
+        const warranty = document.querySelector(`#wiz-warranty-${i}`)?.value.trim() || '';
         const ip = document.querySelector(`#wiz-ip-${i}`)?.value.trim() || '';
         const hostname = document.querySelector(`#wiz-hostname-${i}`)?.value.trim() || '';
         const tag = document.querySelector(`#wiz-tag-${i}`)?.value.trim() || '';
@@ -2262,6 +2273,8 @@ function buildWizardReview() {
         if (make) desc.push(make);
         if (kva) desc.push(`(${kva})`);
         else if (model) desc.push(model);
+        if (year) desc.push(`· Year: ${year}`);
+        if (warranty) desc.push(`· Warranty: ${warranty}`);
 
         let netTagInfo = [];
         if (tag) netTagInfo.push(`Tag: <strong>${tag}</strong>`);
@@ -2376,6 +2389,8 @@ async function submitWizard() {
         charger_serial: document.querySelector(`#wiz-charger-${i}`)?.value.trim() || '',
         monitor_make: document.querySelector(`#wiz-monmake-${i}`)?.value.trim() || '',
         monitor_serial: document.querySelector(`#wiz-monserial-${i}`)?.value.trim() || '',
+        year_of_purchase: document.querySelector(`#wiz-year-${i}`)?.value.trim() || null,
+        warranty_expiry: document.querySelector(`#wiz-warranty-${i}`)?.value.trim() || '',
         ip_address: document.querySelector(`#wiz-ip-${i}`)?.value.trim() || '',
         hostname: document.querySelector(`#wiz-hostname-${i}`)?.value.trim() || '',
         asset_tag: document.querySelector(`#wiz-tag-${i}`)?.value.trim() || '',
