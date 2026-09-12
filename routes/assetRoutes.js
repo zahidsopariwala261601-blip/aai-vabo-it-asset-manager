@@ -576,12 +576,14 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
                                         employee_id, status, remark, year_of_purchase, kva, warranty_expiry, last_update
                                     ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,datetime('now'))`;
 
-                                    const contractualUser = a.contractual_user_name || employee.name || '';
+                                    const contractualUser = a.contractual_user_name || employee.physical_holder || employee.contractual_user_name || '';
+                                    const itemIp = (a.ip_address !== undefined && a.ip_address !== null) ? a.ip_address : (ip_address || '');
+                                    const itemHostname = (a.hostname !== undefined && a.hostname !== null) ? a.hostname : (hostname || '');
 
                                     const params = [
                                         a.name || '', a.serial_number || '', assetTag || '', a.charger_serial || '',
                                         a.monitor_make || '', a.monitor_serial || '', a.keyboard_make || '', a.mouse_make || '',
-                                        a.make || '', a.model || '', ip_address || '', hostname || '',
+                                        a.make || '', a.model || '', itemIp, itemHostname,
                                         currentUser, contractualUser, employee.department || '', employee.designation || '',
                                         empId, status, a.remark || '', a.year_of_purchase || null, a.kva || '', a.warranty_expiry || ''
                                     ];

@@ -786,7 +786,7 @@
                 <div class="topbar">
                     <div class="topbar-left">
                         <h1>Multi-Asset Entry Wizard</h1>
-                        <p id="wizard-step-label">Step 1 of 5 — Employee Information</p>
+                        <p id="wizard-step-label">Step 1 of 4 — Employee Information</p>
                     </div>
                     <div class="topbar-right">
                         <button onclick="closeWizard()" class="btn btn-ghost btn-sm">Cancel</button>
@@ -799,8 +799,7 @@
                         <div class="wizard-step-indicator active" data-step="1">1. Employee</div>
                         <div class="wizard-step-indicator" data-step="2">2. Categories</div>
                         <div class="wizard-step-indicator" data-step="3">3. Specifications</div>
-                        <div class="wizard-step-indicator" data-step="4">4. Network</div>
-                        <div class="wizard-step-indicator" data-step="5">5. Review</div>
+                        <div class="wizard-step-indicator" data-step="4">4. Review</div>
                     </div>
 
                     <!-- Step 1: Employee Info -->
@@ -820,6 +819,12 @@
                                 <label class="form-label">Department</label>
                                 <input id="wizard-emp-dept" class="form-input" readonly style="background:rgba(66,133,244,0.06); cursor:default;">
                             </div>
+                            <div style="grid-column:1/-1;">
+                                <label class="form-label">Physical Asset Holder
+                                    <span style="color:var(--text-muted); font-weight:400; font-size:0.78rem;"> (optional — if different from above)</span>
+                                </label>
+                                <input id="wizard-physical-holder" class="form-input" placeholder="e.g. Suresh Kumar (contractual staff, if applicable)">
+                            </div>
                         </div>
                     </div>
 
@@ -830,32 +835,17 @@
                         <div id="wizard-category-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;"></div>
                     </div>
 
-                    <!-- Step 3: Technical Specifications -->
+                    <!-- Step 3: Technical Specifications + Per-Asset Network -->
                     <div id="wizard-step-3" class="wizard-step-content hidden">
-                        <div class="section-title" style="margin-bottom:16px;">SPECIFICATIONS & SERIAL NUMBERS</div>
+                        <div class="section-title" style="margin-bottom:16px;">SPECIFICATIONS, SERIAL NUMBERS &amp; NETWORK</div>
+                        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:14px;">Fill in each asset's details. IP, Hostname and Asset Tag appear only for assets that support them.</p>
                         <div id="wizard-asset-forms" style="display:flex; flex-direction:column; gap:16px;"></div>
                     </div>
 
-                    <!-- Step 4: Network Context -->
+                    <!-- Step 4: Review & Save -->
                     <div id="wizard-step-4" class="wizard-step-content hidden">
-                        <div class="section-title" style="margin-bottom:16px;">SHARED NETWORK CONTEXT</div>
-                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">Enter the IP and Hostname shared by all assets in this batch</p>
-                        <div class="form-grid">
-                            <div>
-                                <label class="form-label">IP Address</label>
-                                <input id="wizard-ip" class="form-input" placeholder="e.g. 192.168.1.50">
-                            </div>
-                            <div>
-                                <label class="form-label">Hostname</label>
-                                <input id="wizard-hostname" class="form-input" placeholder="e.g. VABO-PC-01">
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Step 5: Review & Save -->
-                    <div id="wizard-step-5" class="wizard-step-content hidden">
-                        <div class="section-title" style="margin-bottom:16px;">REVIEW & SAVE</div>
-                        <div id="wizard-review-content" style="max-height:400px; overflow-y:auto;"></div>
+                        <div class="section-title" style="margin-bottom:16px;">REVIEW &amp; SAVE</div>
+                        <div id="wizard-review-content" style="max-height:420px; overflow-y:auto;"></div>
                     </div>
 
                     <!-- Navigation Buttons -->
@@ -868,6 +858,8 @@
             </div>
         </main>
     </div>
+
+
 
     <!-- ═══ Employee Management Modal ═══ -->
     <div id="employee-modal" class="modal hidden">

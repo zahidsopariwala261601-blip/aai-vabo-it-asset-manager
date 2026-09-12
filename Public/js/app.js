@@ -2057,9 +2057,23 @@ function openWizard() {
     document.getElementById('view-inventory').classList.add('hidden');
 
     // Reset all step contents
-    for (let i = 1; i <= 5; i++) {
-        document.getElementById(`wizard-step-${i}`).classList.toggle('hidden', i !== 1);
+    for (let i = 1; i <= 4; i++) {
+        const stepEl = document.getElementById(`wizard-step-${i}`);
+        if (stepEl) stepEl.classList.toggle('hidden', i !== 1);
     }
+    
+    // Clear employee input fields
+    const empInput = document.getElementById('wizard-emp-name');
+    if (empInput) empInput.value = '';
+    const empIdEl = document.getElementById('wizard-emp-id');
+    if (empIdEl) empIdEl.value = '';
+    const empDesigEl = document.getElementById('wizard-emp-desig');
+    if (empDesigEl) empDesigEl.value = '';
+    const empDeptEl = document.getElementById('wizard-emp-dept');
+    if (empDeptEl) empDeptEl.value = '';
+    const physHolderEl = document.getElementById('wizard-physical-holder');
+    if (physHolderEl) physHolderEl.value = '';
+
     updateWizardStepIndicator();
     updateWizardButtons();
 
@@ -2073,7 +2087,6 @@ function openWizard() {
     `).join('');
 
     // Wire up employee autocomplete for wizard
-    const empInput = document.getElementById('wizard-emp-name');
     if (empInput) {
         _wireAutocomplete(
             empInput,
@@ -2103,85 +2116,146 @@ function toggleWizardCategory(cat) {
     }
 }
 
+function supportsNetworkAndTag(cat) {
+    const catLower = (cat || '').toLowerCase();
+    // PC, AIO, Laptop, Printer, Scanner support network IP/Hostname and Asset Tag
+    return ['pc', 'aio', 'laptop', 'printer', 'scanner'].some(type => catLower.includes(type));
+}
+
 function buildWizardAssetForms() {
     const container = document.getElementById('wizard-asset-forms');
-    container.innerHTML = wizardSelectedCategories.map((cat, i) => `
-        <div style="border:1px solid var(--glass-border); border-radius:10px; padding:14px; background:rgba(255,255,255,0.02);">
-            <div class="section-title" style="font-size:0.7rem; margin-bottom:10px; color:var(--accent-blue);">${getCategoryIcon(cat)} ${cat.toUpperCase()}</div>
-            <div class="form-grid" style="gap:8px;">
-                <input class="form-input wiz-serial" data-idx="${i}" placeholder="Serial Number *" required>
-                <input class="form-input wiz-make" data-idx="${i}" placeholder="Make">
-                <input class="form-input wiz-model" data-idx="${i}" placeholder="Model">
-                <input class="form-input wiz-charger hidden" data-idx="${i}" placeholder="Charger Serial" id="wiz-charger-${i}">
-                <input class="form-input wiz-monitor-make hidden" data-idx="${i}" placeholder="Monitor Make" id="wiz-monmake-${i}">
-                <input class="form-input wiz-monitor-serial hidden" data-idx="${i}" placeholder="Monitor Serial" id="wiz-monserial-${i}">
-                <input class="form-input wiz-remark" data-idx="${i}" placeholder="Remark">
-            </div>
-        </div>
-    `).join('');
+    container.innerHTML = wizardSelectedCategories.map((cat, i) => {
+        const hasNetAndTag = supportsNetworkAndTag(cat);
+        const isLaptop = cat.toLowerCase().includes('laptop');
+        const isPcAio = cat.toLowerCase().includes('pc') || cat.toLowerCase().includes('aio');
 
-    // Show category-specific fields
-    wizardSelectedCategories.forEach((cat, i) => {
-        if (cat.toLowerCase().includes('laptop')) {
-            document.getElementById(`wiz-charger-${i}`)?.classList.remove('hidden');
-        }
-        if (cat.toLowerCase().includes('pc') || cat.toLowerCase().includes('aio')) {
-            document.getElementById(`wiz-monmake-${i}`)?.classList.remove('hidden');
-            document.getElementById(`wiz-monserial-${i}`)?.classList.remove('hidden');
-        }
-    });
+        return `
+        <div style="border:1px solid var(--glass-border); border-radius:10px; padding:16px; background:rgba(255,255,255,0.02);">
+            <div class="section-title" style="font-size:0.75rem; margin-bottom:12px; color:var(--accent-blue); display:flex; justify-content:space-between; align-items:center;">
+                <span>${getCategoryIcon(cat)} ${cat.toUpperCase()} SPECIFICATIONS</span>
+                ${hasNetAndTag ? `<span style="font-size:0.7rem; font-weight:400; color:var(--text-muted);">Includes Network &amp; Asset Tag</span>` : ''}
+            </div>
+            
+            <div class="form-grid" style="gap:10px;">
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">Serial Number <span style="color:var(--accent-red);">*</span></label>
+                    <input class="form-input wiz-serial" data-idx="${i}" placeholder="e.g. SN-123456" required>
+                </div>
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">Make</label>
+                    <input class="form-input wiz-make" data-idx="${i}" placeholder="e.g. Dell / HP / Lenovo">
+                </div>
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">Model</label>
+                    <input class="form-input wiz-model" data-idx="${i}" placeholder="e.g. Latitude 5540">
+                </div>
+
+                ${isLaptop ? `
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">Charger Serial</label>
+                    <input class="form-input wiz-charger" data-idx="${i}" id="wiz-charger-${i}" placeholder="e.g. CHG-98765">
+                </div>` : ''}
+
+                ${isPcAio ? `
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">Monitor Make</label>
+                    <input class="form-input wiz-monmake" data-idx="${i}" id="wiz-monmake-${i}" placeholder="e.g. Dell">
+                </div>
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">Monitor Serial</label>
+                    <input class="form-input wiz-monserial" data-idx="${i}" id="wiz-monserial-${i}" placeholder="e.g. MON-54321">
+                </div>` : ''}
+
+                ${hasNetAndTag ? `
+                <div style="grid-column:1/-1; border-top:1px dashed var(--glass-border); margin-top:6px; padding-top:10px;">
+                    <div style="font-size:0.72rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px;">Network &amp; Asset Unique Tag</div>
+                    <div class="form-grid" style="gap:10px;">
+                        <div>
+                            <label class="form-label" style="font-size:0.78rem;">IP Address</label>
+                            <input class="form-input wiz-ip" data-idx="${i}" id="wiz-ip-${i}" placeholder="e.g. 192.168.1.50">
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-size:0.78rem;">Hostname</label>
+                            <input class="form-input wiz-hostname" data-idx="${i}" id="wiz-hostname-${i}" placeholder="e.g. VABO-PC-01">
+                        </div>
+                        <div>
+                            <label class="form-label" style="font-size:0.78rem;">Asset Tag (Unique ID)</label>
+                            <input class="form-input wiz-tag" data-idx="${i}" id="wiz-tag-${i}" placeholder="Auto-generated if left blank">
+                        </div>
+                    </div>
+                </div>` : ''}
+
+                <div style="grid-column:1/-1;">
+                    <label class="form-label" style="font-size:0.78rem;">Remark</label>
+                    <input class="form-input wiz-remark" data-idx="${i}" placeholder="Optional notes or condition details">
+                </div>
+            </div>
+        </div>`;
+    }).join('');
 }
 
 function buildWizardReview() {
-    const empName = document.getElementById('wizard-emp-name').value;
-    const empDesig = document.getElementById('wizard-emp-desig').value;
-    const empDept = document.getElementById('wizard-emp-dept').value;
-    const ip = document.getElementById('wizard-ip').value;
-    const hostname = document.getElementById('wizard-hostname').value;
+    const empName = document.getElementById('wizard-emp-name').value.trim();
+    const empDesig = document.getElementById('wizard-emp-desig').value.trim();
+    const empDept = document.getElementById('wizard-emp-dept').value.trim();
+    const physicalHolder = document.getElementById('wizard-physical-holder')?.value.trim() || '';
 
     let assetsHtml = wizardSelectedCategories.map((cat, i) => {
-        const serial = document.querySelector(`.wiz-serial[data-idx="${i}"]`)?.value || '';
-        const make = document.querySelector(`.wiz-make[data-idx="${i}"]`)?.value || '';
-        const model = document.querySelector(`.wiz-model[data-idx="${i}"]`)?.value || '';
-        return `<div style="padding:8px 12px; border:1px solid var(--glass-border); border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-weight:600;">${cat}</span>
-            <span style="font-size:0.8rem; color:var(--text-muted);">${serial || 'No serial'} | ${make || '-'} ${model || '-'}</span>
+        const serial = document.querySelector(`.wiz-serial[data-idx="${i}"]`)?.value.trim() || 'No serial';
+        const make = document.querySelector(`.wiz-make[data-idx="${i}"]`)?.value.trim() || '-';
+        const model = document.querySelector(`.wiz-model[data-idx="${i}"]`)?.value.trim() || '-';
+        const ip = document.querySelector(`#wiz-ip-${i}`)?.value.trim() || '';
+        const hostname = document.querySelector(`#wiz-hostname-${i}`)?.value.trim() || '';
+        const tag = document.querySelector(`#wiz-tag-${i}`)?.value.trim() || '';
+
+        let netTagInfo = [];
+        if (tag) netTagInfo.push(`Tag: <strong>${tag}</strong>`);
+        if (ip) netTagInfo.push(`IP: ${ip}`);
+        if (hostname) netTagInfo.push(`Host: ${hostname}`);
+
+        return `
+        <div style="padding:10px 14px; border:1px solid var(--glass-border); border-radius:8px; margin-bottom:8px; background:rgba(255,255,255,0.01);">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                <span style="font-weight:700; color:var(--accent-blue);">${getCategoryIcon(cat)} ${cat}</span>
+                <span style="font-size:0.8rem; font-family:monospace; color:var(--text-muted);">${serial}</span>
+            </div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">
+                ${make} ${model}
+            </div>
+            ${netTagInfo.length > 0 ? `<div style="font-size:0.78rem; color:var(--accent-green); margin-top:4px;">${netTagInfo.join(' · ')}</div>` : ''}
         </div>`;
     }).join('');
 
     document.getElementById('wizard-review-content').innerHTML = `
         <div style="margin-bottom:16px;">
-            <div class="section-title" style="font-size:0.7rem; margin-bottom:8px;">EMPLOYEE</div>
-            <div style="padding:10px; border:1px solid var(--glass-border); border-radius:8px;">
-                <strong>${empName}</strong> — ${empDesig || '-'} · ${empDept || '-'}
-            </div>
-        </div>
-        <div style="margin-bottom:16px;">
-            <div class="section-title" style="font-size:0.7rem; margin-bottom:8px;">NETWORK</div>
-            <div style="padding:10px; border:1px solid var(--glass-border); border-radius:8px;">
-                IP: ${ip || 'N/A'} | Hostname: ${hostname || 'N/A'}
+            <div class="section-title" style="font-size:0.7rem; margin-bottom:8px;">EMPLOYEE INFORMATION</div>
+            <div style="padding:12px; border:1px solid var(--glass-border); border-radius:8px; background:rgba(66,133,244,0.03);">
+                <div style="font-weight:700; font-size:0.95rem;">${empName}</div>
+                <div style="font-size:0.82rem; color:var(--text-muted); margin-top:2px;">${empDesig || '-'} · ${empDept || '-'}</div>
+                ${physicalHolder ? `<div style="font-size:0.8rem; color:var(--accent-purple); margin-top:4px;">👤 Physical Holder: <strong>${physicalHolder}</strong></div>` : ''}
             </div>
         </div>
         <div>
-            <div class="section-title" style="font-size:0.7rem; margin-bottom:8px;">ASSETS (${wizardSelectedCategories.length})</div>
+            <div class="section-title" style="font-size:0.7rem; margin-bottom:8px;">ASSIGNED ASSETS (${wizardSelectedCategories.length})</div>
             ${assetsHtml}
         </div>
     `;
 }
 
 function updateWizardStepIndicator() {
+    const steps = ['Employee Information', 'Hardware Categories', 'Specifications & Network', 'Review & Save'];
     document.querySelectorAll('.wizard-step-indicator').forEach(el => {
         const step = parseInt(el.dataset.step);
         el.classList.toggle('active', step === wizardCurrentStep);
         el.classList.toggle('completed', step < wizardCurrentStep);
     });
-    document.getElementById('wizard-step-label').textContent = `Step ${wizardCurrentStep} of 5 — ${['Employee Information', 'Hardware Categories', 'Specifications', 'Network Context', 'Review & Save'][wizardCurrentStep - 1]}`;
+    document.getElementById('wizard-step-label').textContent = `Step ${wizardCurrentStep} of 4 — ${steps[wizardCurrentStep - 1]}`;
 }
 
 function updateWizardButtons() {
     document.getElementById('wizard-prev-btn').style.display = wizardCurrentStep > 1 ? 'inline-block' : 'none';
     const nextBtn = document.getElementById('wizard-next-btn');
-    if (wizardCurrentStep === 5) {
+    if (wizardCurrentStep === 4) {
         nextBtn.textContent = '✅ Save All Assets';
         nextBtn.onclick = submitWizard;
     } else {
@@ -2206,8 +2280,6 @@ function wizardNext() {
         for (let s of serials) {
             if (!s.value.trim()) return toast('All serial numbers are required', 'warning');
         }
-    }
-    if (wizardCurrentStep === 4) {
         buildWizardReview();
     }
 
@@ -2231,8 +2303,7 @@ async function submitWizard() {
     const empId = document.getElementById('wizard-emp-id').value || null;
     const empDesig = document.getElementById('wizard-emp-desig').value.trim();
     const empDept = document.getElementById('wizard-emp-dept').value.trim();
-    const ip = document.getElementById('wizard-ip').value.trim();
-    const hostname = document.getElementById('wizard-hostname').value.trim();
+    const physicalHolder = document.getElementById('wizard-physical-holder')?.value.trim() || '';
 
     if (!empName) return toast('Employee is required', 'warning');
 
@@ -2244,16 +2315,23 @@ async function submitWizard() {
         charger_serial: document.querySelector(`#wiz-charger-${i}`)?.value.trim() || '',
         monitor_make: document.querySelector(`#wiz-monmake-${i}`)?.value.trim() || '',
         monitor_serial: document.querySelector(`#wiz-monserial-${i}`)?.value.trim() || '',
+        ip_address: document.querySelector(`#wiz-ip-${i}`)?.value.trim() || '',
+        hostname: document.querySelector(`#wiz-hostname-${i}`)?.value.trim() || '',
+        asset_tag: document.querySelector(`#wiz-tag-${i}`)?.value.trim() || '',
         remark: document.querySelector(`.wiz-remark[data-idx="${i}"]`)?.value.trim() || ''
     }));
 
     showLoader('Registering Assets...');
     try {
         const result = await apiWizardSubmit({
-            employee: { name: empName, id: empId, designation: empDesig, department: empDept },
-            assets,
-            ip_address: ip,
-            hostname
+            employee: {
+                name: empName,
+                id: empId,
+                designation: empDesig,
+                department: empDept,
+                physical_holder: physicalHolder
+            },
+            assets
         });
         toast(result.message, 'success');
         closeWizard();
