@@ -224,7 +224,19 @@ router.post('/', authenticateToken, validateAsset, (req, res, next) => {
         db.run(sql, params, function (err) {
             if (err) {
                 if (err.message && err.message.includes('UNIQUE constraint failed: assets.serial_number')) {
-                    return res.status(409).json({ error: 'Asset with this serial number already exists' });
+                    const serialInput = (d.serial_number || '').trim();
+                    return db.get(
+                        `SELECT name, serial_number, current_user, contractual_user_name FROM assets WHERE LOWER(serial_number) = LOWER(?)`,
+                        [serialInput],
+                        (lookupErr, existing) => {
+                            const holder = existing ? ((existing.contractual_user_name && existing.contractual_user_name.trim()) || existing.current_user || 'IT Store') : 'IT Store';
+                            const assetName = existing ? existing.name : (d.name || 'Asset');
+                            const serialNum = existing ? existing.serial_number : serialInput;
+                            return res.status(409).json({
+                                error: `Serial number already exists: Asset '${assetName}' with Serial Number '${serialNum}' is already registered with ${holder}`
+                            });
+                        }
+                    );
                 }
                 return next(err);
             }
@@ -291,7 +303,19 @@ router.put('/:id', authenticateToken, validateAsset, (req, res, next) => {
             db.run(sql, params, function (err) {
                 if (err) {
                     if (err.message && err.message.includes('UNIQUE constraint failed: assets.serial_number')) {
-                        return res.status(409).json({ error: 'Asset with this serial number already exists' });
+                        const serialInput = (d.serial_number || '').trim();
+                        return db.get(
+                            `SELECT name, serial_number, current_user, contractual_user_name FROM assets WHERE LOWER(serial_number) = LOWER(?)`,
+                            [serialInput],
+                            (lookupErr, existing) => {
+                                const holder = existing ? ((existing.contractual_user_name && existing.contractual_user_name.trim()) || existing.current_user || 'IT Store') : 'IT Store';
+                                const assetName = existing ? existing.name : (d.name || 'Asset');
+                                const serialNum = existing ? existing.serial_number : serialInput;
+                                return res.status(409).json({
+                                    error: `Serial number already exists: Asset '${assetName}' with Serial Number '${serialNum}' is already registered with ${holder}`
+                                });
+                            }
+                        );
                     }
                     return next(err);
                 }
@@ -530,12 +554,15 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
     }
 
     // Check for existing serial numbers in DB (case-insensitive)
-    const checkSql = `SELECT serial_number FROM assets WHERE LOWER(serial_number) IN (${serials.map(() => '?').join(',')})`;
+    const checkSql = `SELECT name, serial_number, current_user, contractual_user_name FROM assets WHERE LOWER(serial_number) IN (${serials.map(() => '?').join(',')})`;
     db.all(checkSql, serials, (err, existing) => {
         if (err) return next(err);
         if (existing && existing.length > 0) {
-            const dupes = existing.map(e => e.serial_number).join(', ');
-            return res.status(409).json({ error: `Serial number(s) already exist: ${dupes}` });
+            const details = existing.map(e => {
+                const holder = (e.contractual_user_name && e.contractual_user_name.trim()) ? e.contractual_user_name.trim() : (e.current_user || 'IT Store');
+                return `Asset '${e.name}' with Serial Number '${e.serial_number}' is already registered with ${holder}`;
+            }).join('; ');
+            return res.status(409).json({ error: `Serial number(s) already exist: ${details}` });
         }
 
         // All clear — begin transaction
