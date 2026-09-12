@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Database (lives on Railway persistent volume in production)
+*.db
+*.db-shm
+*.db-wal
+
+# Environment secrets — NEVER commit .env
+.env
+
+# Build artifacts and local exports
+archive/
+exports/
+__pycache__/
+
+# OS junk
+.DS_Store
+Thumbs.db
+*.log
+
+# Test temp files
+tmp/

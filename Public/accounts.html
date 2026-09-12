@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Session Manager — AAI VABO</title>
+    <link rel="stylesheet" href="/css/accounts.css">
+    <link rel="stylesheet" href="/css/modern.css">
+</head>
+<body class="accounts-page">
+    <div id="loader-overlay">
+        <div class="loader-svg-container">
+            <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="chipGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#2d2d2d"></stop>
+                        <stop offset="100%" stop-color="#0f0f0f"></stop>
+                    </linearGradient>
+                    <linearGradient id="textGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#eeeeee"></stop>
+                        <stop offset="100%" stop-color="#888888"></stop>
+                    </linearGradient>
+                </defs>
+                <rect x="330" y="190" width="140" height="100" rx="20" ry="20" fill="url(#chipGradient)" stroke="#222" stroke-width="3"></rect>
+                <text x="400" y="240" font-family="Arial, sans-serif" font-size="18" fill="url(#textGradient)" text-anchor="middle" alignment-baseline="middle">AAI VABO</text>
+            </svg>
+        </div>
+        <div class="loader-text">Loading Account Manager...</div>
+    </div>
+
+    <div class="container">
+        <header>
+            <div class="brand">
+                <span class="eyebrow">AAI VABO / WORKSPACE ADMINISTRATION</span>
+                <h1>Account Manager</h1>
+                <p>Manage the people behind your airport IT operations.</p>
+                <a href="/" class="btn btn-secondary">Back to Inventory / Sign In</a>
+            </div>
+            <div class="stats">
+                <div class="stat-card">
+                    <span class="stat-value" id="total-users">0</span>
+                    <span class="stat-label">Registered accounts</span>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <p id="account-status" role="status"></p>
+            <div class="glass-card">
+                <div class="card-header">
+                    <h2>Registered Accounts</h2>
+                    <button class="btn btn-primary" onclick="showAddUserModal()">+ New User</button>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-table-body">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-backdrop" class="hidden"></div>
+    
+    <!-- Add User Modal -->
+    <div id="add-user-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <h3>Add New User</h3>
+            <form id="add-user-form">
+                <div class="form-group">
+                    <label for="new-username">Username</label>
+                    <input type="text" id="new-username" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-password">Password</label>
+                    <input type="password" id="new-password" required>
+                </div>
+                <div class="form-group">
+                    <label for="new-role">Role</label>
+                    <select id="new-role">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideModals()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div id="reset-password-modal" class="modal hidden">
+        <div class="modal-content glass-card">
+            <h3>Reset Password</h3>
+            <p id="reset-user-display"></p>
+            <form id="reset-password-form">
+                <input type="hidden" id="reset-user-id">
+                <div class="form-group">
+                    <label for="reset-password">New Password</label>
+                    <input type="password" id="reset-password" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="hideModals()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="/js/accounts.js"></script>
+</body>
+</html>

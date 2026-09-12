@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AAI VABO — IT Asset Manager</title>
+    <meta name="description"
+        content="IT Asset Management System for AAI Vadodara Airport — Inventory, Handover, Takeover, and Audit Tracking">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/modern.css">
+</head>
+
+<body>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- ═══ Universal Loader Overlay ═══ -->
+    <div id="loader-overlay">
+        <div class="loader-svg-container">
+            <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="chipGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#2d2d2d"></stop>
+                        <stop offset="100%" stop-color="#0f0f0f"></stop>
+                    </linearGradient>
+                    <linearGradient id="textGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#eeeeee"></stop>
+                        <stop offset="100%" stop-color="#888888"></stop>
+                    </linearGradient>
+                    <linearGradient id="pinGradient" x1="1" y1="0" x2="0" y2="0">
+                        <stop offset="0%" stop-color="#bbbbbb"></stop>
+                        <stop offset="50%" stop-color="#888888"></stop>
+                        <stop offset="100%" stop-color="#555555"></stop>
+                    </linearGradient>
+                </defs>
+                <g id="traces">
+                    <path d="M100 100 H200 V210 H326" class="trace-bg"></path>
+                    <path d="M100 100 H200 V210 H326" class="trace-flow purple"></path>
+                    <path d="M80 180 H180 V230 H326" class="trace-bg"></path>
+                    <path d="M80 180 H180 V230 H326" class="trace-flow blue"></path>
+                    <path d="M60 260 H150 V250 H326" class="trace-bg"></path>
+                    <path d="M60 260 H150 V250 H326" class="trace-flow yellow"></path>
+                    <path d="M100 350 H200 V270 H326" class="trace-bg"></path>
+                    <path d="M100 350 H200 V270 H326" class="trace-flow green"></path>
+                    <path d="M700 90 H560 V210 H474" class="trace-bg"></path>
+                    <path d="M700 90 H560 V210 H474" class="trace-flow blue"></path>
+                    <path d="M740 160 H580 V230 H474" class="trace-bg"></path>
+                    <path d="M740 160 H580 V230 H474" class="trace-flow green"></path>
+                    <path d="M720 250 H590 V250 H474" class="trace-bg"></path>
+                    <path d="M720 250 H590 V250 H474" class="trace-flow red"></path>
+                    <path d="M680 340 H570 V270 H474" class="trace-bg"></path>
+                    <path d="M680 340 H570 V270 H474" class="trace-flow yellow"></path>
+                </g>
+                <rect x="330" y="190" width="140" height="100" rx="20" ry="20" fill="url(#chipGradient)" stroke="#222" stroke-width="3"></rect>
+                <g>
+                    <rect x="322" y="205" width="8" height="10" fill="url(#pinGradient)" rx="2"></rect>
+                    <rect x="322" y="225" width="8" height="10" fill="url(#pinGradient)" rx="2"></rect>
+                    <rect x="322" y="245" width="8" height="10" fill="url(#pinGradient)" rx="2"></rect>
+                    <rect x="322" y="265" width="8" height="10" fill="url(#pinGradient)" rx="2"></rect>
+                </g>
+                <g>
+                    <rect x="470" y="205" width="8" height="10" fill="url(#pinGradient)" rx="2"></rect>
+                    <rect x="470" y="225" width="8" height="10" fill="url(#pinGradient)" rx="2"></rect>
+                    <rect x="470" y="245" width="8" height="10" fill="url(#pinGradient)" rx="2"></rect>
+                    <rect x="470" y="265" width="8" height="10" fill="url(#pinGradient)" rx="2"></rect>
+                </g>
+                <text x="400" y="240" font-family="Arial, sans-serif" font-size="18" fill="url(#textGradient)" text-anchor="middle" alignment-baseline="middle" id="loader-status">Processing</text>
+            </svg>
+        </div>
+        <div id="loader-label" class="loader-text">AAI VABO IT Asset Management</div>
+    </div>
+
+    <!-- Initial Loading Screen -->
+    <div id="loading-screen">
+        <div class="loader-svg-container">
+            <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+                <use href="#traces"></use>
+                <rect x="330" y="190" width="140" height="100" rx="20" ry="20" fill="url(#chipGradient)" stroke="#222" stroke-width="3"></rect>
+                <text x="400" y="240" font-family="Arial, sans-serif" font-size="18" fill="url(#textGradient)" text-anchor="middle" alignment-baseline="middle">AAI VABO</text>
+            </svg>
+        </div>
+        <div class="loader-text">Initializing System...</div>
+    </div>
+
+    <!-- ═══ Auth ═══ -->
+    <div id="auth-container" class="hidden">
+        <section class="auth-story" aria-label="About the workspace">
+            <span class="eyebrow">AAI VABO / DIGITAL WORKSPACE</span>
+            <h2>Every asset.<br>One clear picture.</h2>
+            <p>A connected workspace for the people and technology that keep Vadodara Airport moving.</p>
+            <img src="/images/operations.svg" alt="Illustration of connected airport IT equipment" width="520" height="340">
+            <div class="auth-features"><span>Inventory control</span><span>Asset handovers</span><span>Audit history</span></div>
+        </section>
+        <!-- Login -->
+        <div id="login-view" class="auth-box">
+            <div class="glass-card">
+                <div class="auth-logo">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                    </svg>
+                </div>
+                <span class="eyebrow">YOUR OPERATIONS WORKSPACE</span>
+                <h1 class="auth-title">Welcome back.</h1>
+                <p class="auth-subtitle">Sign in to manage your airport IT assets.</p>
+                <form id="login-form" autocomplete="off">
+                    <label class="form-label" for="login-username">Username</label>
+                    <input type="text" id="login-username" class="form-input" placeholder="Enter your username" autocomplete="username"
+                        required>
+                    <label class="form-label" for="login-password">Password</label>
+                    <input type="password" id="login-password" class="form-input" placeholder="Enter your password" autocomplete="current-password" required>
+                    <button type="submit" class="btn btn-primary" style="margin-top:8px;">Sign In</button>
+                </form>
+                <span class="auth-toggle" onclick="toggleAuth('register')">New user? Create account</span>
+            </div>
+        </div>
+
+        <!-- Register -->
+        <div id="register-view" class="auth-box hidden">
+            <div class="glass-card">
+                <div class="auth-logo"
+                    style="background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                    </svg>
+                </div>
+                <h1 class="auth-title">Register</h1>
+                <p class="auth-subtitle">Create your account</p>
+                <form id="register-form" autocomplete="off">
+                    <input type="text" id="reg-username" class="form-input" placeholder="Choose username" required
+                        minlength="3">
+                    <input type="password" id="reg-password" class="form-input" placeholder="Password" required
+                        minlength="4">
+                    <input type="password" id="reg-confirm" class="form-input" placeholder="Confirm password" required>
+                    <button type="submit" class="btn btn-primary"
+                        style="margin-top:8px; background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan));">Create
+                        Account</button>
+                </form>
+                <span class="auth-toggle" onclick="toggleAuth('login')">Already have an account? Sign in</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Main App ═══ -->
+    <div id="app" class="hidden">
+        <!-- Sidebar -->
+        <button class="nav-scrim" id="nav-scrim" onclick="setNavigation(false)" aria-label="Close navigation" hidden></button>
+        <nav class="sidebar" id="primary-navigation" aria-label="Main navigation">
+            <button class="nav-close btn-icon" onclick="setNavigation(false)" aria-label="Close navigation">✕</button>
+            <div class="sidebar-brand">
+                <div class="sidebar-brand-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path
+                            d="M21 16v-2l-8-5V3.5c0-.83-.67-1.5-1.5-1.5S10 2.67 10 3.5V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5l8 2.5z" />
+                    </svg>
+                </div>
+                <h2>AAI <span>VABO</span></h2>
+                <small>VADODARA AIRPORT</small>
+                <div class="sidebar-user" id="user-display"></div>
+            </div>
+
+            <div class="nav-section-title">Navigation</div>
+
+            <button onclick="switchView('dashboard')" class="nav-btn active" id="btn-dashboard">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+                </svg>
+                Dashboard
+            </button>
+            <button onclick="switchView('inventory')" class="nav-btn" id="btn-inventory">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z" />
+                </svg>
+                Inventory
+            </button>
+            <button onclick="switchView('employees')" class="nav-btn" id="btn-employees">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5s-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                </svg>
+                Employees
+            </button>
+
+            <hr class="nav-divider">
+            <div class="nav-section-title">Transactions</div>
+
+            <button onclick="switchView('handover')" class="nav-btn" id="btn-handover">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M16.01 11H4v2h12.01v3L20 12l-3.99-4z" />
+                </svg>
+                Handover
+            </button>
+            <button onclick="switchView('takeover')" class="nav-btn" id="btn-takeover">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M7.99 13H20v-2H7.99V8L4 12l3.99 4z" />
+                </svg>
+                Takeover
+            </button>
+            <button onclick="switchView('history')" class="nav-btn" id="btn-history">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z" />
+                </svg>
+                Audit Logs
+            </button>
+
+
+            <hr class="nav-divider">
+            <div class="nav-section-title">Tools</div>
+
+            <a href="/accounts.html" class="nav-btn"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2 3 6v6c0 5 9 10 9 10s9-5 9-10V6l-9-4zm0 5a3 3 0 1 1 0 6 3 3 0 0 1 0-6zm-5 10c0-2 2-3 5-3s5 1 5 3H7z"/></svg>Account Manager</a>
+
+            <button onclick="exportCSV()" class="nav-btn">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z" />
+                </svg>
+                Export CSV
+            </button>
+            <label class="nav-btn" style="cursor:pointer;">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor" d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z" />
+                </svg>
+                Import CSV
+                <input type="file" class="hidden" onchange="importCSV(this)" accept=".csv">
+            </label>
+            <button onclick="backupData()" class="nav-btn">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z" />
+                </svg>
+                Backup JSON
+            </button>
+
+            <hr class="nav-divider">
+            <div class="nav-section-title">Display Settings</div>
+            
+            <div style="padding: 0 12px; margin-bottom: 20px;">
+                <p style="font-size: calc(0.75rem * var(--font-scale, 1)); color: var(--text-muted); margin-bottom: 8px;">Theme & Text Size</p>
+                <div style="display: flex; gap: 4px; margin-bottom: 8px;">
+                    <button id="font-btn-small" onclick="applyFontScaling('small')" class="nav-btn font-btn" style="flex:1; padding:6px; font-size: calc(0.8rem * var(--font-scale, 1)); justify-content:center;" title="Small">A-</button>
+                    <button id="font-btn-medium" onclick="applyFontScaling('medium')" class="nav-btn font-btn active" style="flex:1; padding:6px; font-size: calc(1rem * var(--font-scale, 1)); justify-content:center;" title="Medium">A</button>
+                    <button id="font-btn-large" onclick="applyFontScaling('large')" class="nav-btn font-btn" style="flex:1; padding:6px; font-size: calc(1.2rem * var(--font-scale, 1)); justify-content:center;" title="Large">A+</button>
+                </div>
+                
+                <div class="theme-toggle" onclick="toggleTheme()" id="theme-toggle-btn">
+                    <svg id="sun-icon" class="hidden" viewBox="0 0 24 24"><path fill="currentColor" d="M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37a.996.996 0 00-1.41 0 .996.996 0 000 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36a.996.996 0 000-1.41.996.996 0 00-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z"/></svg>
+                    <svg id="moon-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9 9-4.03 9-9c0-.46-.04-.92-.1-1.36-.98 1.37-2.58 2.26-4.4 2.26-2.98 0-5.4-2.42-5.4-5.4 0-1.81.89-3.42 2.26-4.4-.44-.06-.9-.1-1.36-.1z"/></svg>
+                    <span id="theme-text">Light Mode</span>
+                </div>
+            </div>
+
+            <div style="flex:1;"></div>
+
+            <button onclick="logout()" class="nav-btn" style="color:var(--accent-red);">
+                <svg viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                        d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z" />
+                </svg>
+                Logout
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-area">
+            <header class="workspace-bar">
+                <div class="workspace-location"><button id="menu-toggle" class="btn-icon menu-toggle" onclick="setNavigation(true)" aria-label="Open navigation" aria-controls="primary-navigation" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button><span class="location-symbol" aria-hidden="true">↗</span><div><strong>Vadodara Airport</strong><span>IT asset operations / VABO</span></div></div>
+                <div class="workspace-meta"><span class="sync-state" id="sync-state" role="status">Awaiting data</span><span class="workspace-avatar" id="workspace-avatar" aria-label="Signed-in user">IT</span></div>
+            </header>
+
+            <!-- ═══ DASHBOARD ═══ -->
+            <div id="view-dashboard">
+                <div class="topbar">
+                    <div class="topbar-left">
+                        <span class="eyebrow">WORKSPACE OVERVIEW</span>
+                        <h1>Operations dashboard</h1>
+                        <p id="current-date"></p>
+                    </div>
+                    <div class="topbar-right">
+                        <button class="btn btn-ghost btn-sm" onclick="loadData()">
+                            <svg viewBox="0 0 24 24" width="14" height="14">
+                                <path fill="currentColor"
+                                    d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z" />
+                            </svg>
+                            Refresh
+                        </button>
+                    </div>
+                </div>
+
+                <section class="overview-hero">
+                    <div class="hero-copy"><span class="hero-tag"><span></span>ASSET MANAGEMENT, CONNECTED</span><h2>Your technology.<br><em>Ready for takeoff.</em></h2><p>Track equipment, coordinate handovers, and keep every asset accounted for from one workspace.</p><div class="hero-actions"><button class="btn btn-primary btn-sm" onclick="filterByType('all')">Explore inventory <span aria-hidden="true">↗</span></button><button class="btn btn-ghost btn-sm" onclick="switchView('handover')">New handover <span aria-hidden="true">→</span></button></div></div>
+                    <img class="hero-illustration" src="/images/operations.svg" alt="Connected desktop, server, and laptop illustration" width="520" height="340">
+                </section>
+
+                <div class="stats-grid">
+                    <div class="glass-card stat-card stat-blue">
+                        <span class="metric-icon" aria-hidden="true">▦</span>
+                        <span class="stat-label">Total Assets</span>
+                        <div class="stat-value" id="stat-total">0</div>
+                        <div class="stat-sub">All registered items</div>
+                    </div>
+                    <div class="glass-card stat-card stat-green">
+                        <span class="metric-icon" aria-hidden="true">↓</span>
+                        <span class="stat-label">In Store</span>
+                        <div class="stat-value" id="stat-stock">0</div>
+                        <div class="stat-sub">Ready for handover</div>
+                    </div>
+                    <div class="glass-card stat-card stat-amber">
+                        <span class="metric-icon" aria-hidden="true">↗</span>
+                        <span class="stat-label">Issued</span>
+                        <div class="stat-value" id="stat-issued">0</div>
+                        <div class="stat-sub">Currently assigned</div>
+                    </div>
+                    <div class="glass-card stat-card stat-purple"><span class="metric-icon" aria-hidden="true">◎</span><span class="stat-label">Deployment rate</span><div class="stat-value"><span id="stat-utilization">0</span><small>%</small></div><div class="stat-sub">Assigned assets / total assets</div></div>
+                </div>
+
+                <div class="insights-grid">
+                    <section class="glass-card deployment-panel"><div class="panel-heading"><div><span class="eyebrow">FLEET AT A GLANCE</span><h2>Asset readiness</h2></div><span class="panel-chip">Current inventory</span></div><div class="readiness-number"><strong id="readiness-percent">0%</strong><span>available for handover</span></div><div class="readiness-track" id="readiness-track" role="img" aria-label="Loading asset status"></div><div class="readiness-legend" id="readiness-legend"></div></section>
+                    <section class="glass-card department-panel"><div class="panel-heading"><div><span class="eyebrow">ACROSS YOUR AIRPORT</span><h2>Department allocation</h2></div><button class="text-action" onclick="switchView('department-select')">View all ↗</button></div><div id="department-bars" class="department-bars"><p class="empty-insight">Loading departments…</p></div></section>
+                </div>
+
+                <div class="content-split">
+                    <div class="glass-card">
+                        <div class="panel-heading"><div><span class="eyebrow">LATEST MOVEMENTS</span><h2>Recent activity</h2></div><button class="text-action" onclick="switchView('history')">View history ↗</button></div>
+                        <div id="recent-activity">
+                            <p style="text-align:center; color:var(--text-muted); padding:20px; font-style:italic;">
+                                Loading...</p>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-container">
+                        <div class="panel-heading"><div><span class="eyebrow">YOUR EQUIPMENT MIX</span><h2>Category distribution</h2></div></div>
+                        <div class="css-pie-chart" id="pie-chart" role="img" aria-label="Asset category distribution"><div class="donut-center"><strong id="chart-total">0</strong><span>total assets</span></div></div>
+                        <div class="chart-legend" id="pie-legend"></div>
+                    </div>
+                </div>
+            </div>
+
+
+
+            <!-- ═══ INVENTORY TYPE SELECTOR ═══ -->
+            <div id="view-inventory-select" class="hidden">
+                <div class="topbar">
+                    <div class="topbar-left">
+                        <h1>Select Asset Type</h1>
+                        <p>Choose a category to view or manage assets</p>
+                    </div>
+                </div>
+
+                <div class="type-selector-grid">
+                    <div class="type-card type-card-all" onclick="filterByType('all')">
+                        <div class="type-card-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36">
+                                <path fill="currentColor"
+                                    d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z" />
+                            </svg>
+                        </div>
+                        <div class="type-card-label">All Assets</div>
+                        <div class="type-card-count" id="count-all">0</div>
+                    </div>
+                    <div class="type-card type-card-department" onclick="switchView('department-select')">
+                        <div class="type-card-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36">
+                                <path fill="currentColor"
+                                    d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-7 8c0-2.76 4.03-5 7-5s7 2.24 7 5v1H5v-1zm14-8h2v3h3v2h-3v3h-2v-3h-3v-2h3v-3z" />
+                            </svg>
+                        </div>
+                        <div class="type-card-label">Department</div>
+                        <div class="type-card-count" id="count-departments">0</div>
+                    </div>
+                    <div class="type-card type-card-pc" onclick="filterByType('PC')">
+                        <div class="type-card-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36">
+                                <path fill="currentColor"
+                                    d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7l-2 3v1h8v-1l-2-3h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 12H3V4h18v10z" />
+                            </svg>
+                        </div>
+                        <div class="type-card-label">Desktop / PC</div>
+                        <div class="type-card-count" id="count-pc">0</div>
+                    </div>
+                    <div class="type-card type-card-aio" onclick="filterByType('AIO')">
+                        <div class="type-card-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36">
+                                <path fill="currentColor"
+                                    d="M22 18V3H2v15H0v2h24v-2h-2zm-2-13v11H4V5h16z" />
+                            </svg>
+                        </div>
+                        <div class="type-card-label">AIO (ALL IN ONE)</div>
+                        <div class="type-card-count" id="count-aio">0</div>
+                    </div>
+                    <div class="type-card type-card-laptop" onclick="filterByType('Laptop')">
+                        <div class="type-card-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36">
+                                <path fill="currentColor"
+                                    d="M20 18c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2H0v2h24v-2h-4zM4 6h16v10H4V6z" />
+                            </svg>
+                        </div>
+                        <div class="type-card-label">Laptop</div>
+                        <div class="type-card-count" id="count-laptop">0</div>
+                    </div>
+                    <div class="type-card type-card-printer" onclick="filterByType('Printer')">
+                        <div class="type-card-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36">
+                                <path fill="currentColor"
+                                    d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z" />
+                            </svg>
+                        </div>
+                        <div class="type-card-label">Printer</div>
+                        <div class="type-card-count" id="count-printer">0</div>
+                    </div>
+                    <div class="type-card type-card-ups" onclick="filterByType('UPS')">
+                        <div class="type-card-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36">
+                                <path fill="currentColor"
+                                    d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.34C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4zM13 18h-2v-2h2v2zm0-4h-2V9h2v5z" />
+                            </svg>
+                        </div>
+                        <div class="type-card-label">UPS</div>
+                        <div class="type-card-count" id="count-ups">0</div>
+                    </div>
+                    <div class="type-card type-card-scanner" onclick="filterByType('SCANNER')">
+                        <div class="type-card-icon">
+                            <svg viewBox="0 0 24 24" width="36" height="36">
+                                <path fill="currentColor"
+                                    d="M6 9V4c0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2v5h1c1.66 0 3 1.34 3 3v5h-4v5H6v-5H2v-5c0-1.66 1.34-3 3-3h1zm2-5v5h8V4H8zm8 16v-5H8v5h8zm3-7c0-.55-.45-1-1-1s-1 .45-1 1 .45 1 1 1 1-.45 1-1z" />
+                            </svg>
+                        </div>
+                        <div class="type-card-label">Scanner</div>
+                        <div class="type-card-count" id="count-scanner">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-department-select" class="hidden">
+                <div class="topbar">
+                    <div class="topbar-left" style="display:flex; align-items:center; gap:12px;">
+                        <button class="btn-icon" onclick="switchView('inventory-select')" title="Back to categories"
+                            style="width:36px; height:36px;">
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="currentColor"
+                                    d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h1>Select Department</h1>
+                            <p>Choose a department to view its assets</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="type-selector-grid" id="department-selector-grid"></div>
+            </div>
+
+            <!-- ═══ INVENTORY ═══ -->
+            <div id="view-inventory" class="hidden">
+                <div class="topbar">
+                    <div class="topbar-left" style="display:flex; align-items:center; gap:12px;">
+                        <button class="btn-icon" onclick="goBackToInventorySelector()" title="Back to categories"
+                            style="width:36px; height:36px;">
+                            <svg viewBox="0 0 24 24" width="20" height="20">
+                                <path fill="currentColor"
+                                    d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" />
+                            </svg>
+                        </button>
+                        <div>
+                            <h1 id="inventory-title">Asset Inventory</h1>
+                            <p id="inventory-subtitle">Register, edit, and manage IT assets</p>
+                        </div>
+                    </div>
+                    <div class="topbar-right">
+                        <input type="text" id="inventory-search" class="form-input" placeholder="Search assets..."
+                            style="width:220px; margin:0;">
+                    </div>
+                </div>
+
+                <!-- Registration Form -->
+                <div class="glass-card" style="margin-bottom:20px;">
+                    <div class="section-title" id="form-header" style="margin-bottom:14px;">NEW REGISTRATION</div>
+                    <div class="form-grid">
+                        <input id="in-name" class="form-input" placeholder="Item Name (e.g. Laptop, PC)"
+                            oninput="checkAssetType()">
+                        <input id="in-serial" class="form-input" placeholder="Serial No.">
+                        <input id="in-asset-tag" class="form-input" placeholder="Asset Tag (Auto-generated)" readonly style="background:rgba(66,133,244,0.06); cursor:default;">
+                        <input id="in-charger" class="form-input hidden" placeholder="Charger Serial No.">
+                        <input id="in-monitor-make" class="form-input hidden" placeholder="Monitor Make">
+                        <input id="in-monitor-serial" class="form-input hidden" placeholder="Monitor Serial No.">
+                        <input id="in-keyboard-make" class="form-input hidden" placeholder="Keyboard Make">
+                        <input id="in-mouse-make" class="form-input hidden" placeholder="Mouse Make">
+                        <input id="in-make" class="form-input" placeholder="Make">
+                        <input id="in-model" class="form-input" placeholder="Model">
+                        <input id="in-ip" class="form-input" placeholder="IP Address">
+                        <input id="in-hostname" class="form-input" placeholder="Hostname">
+                        <input id="in-holder" class="form-input" placeholder="Current Holder (Default: IT Store)" autocomplete="off">
+                        <input type="hidden" id="in-employee-id">
+                        <input id="in-contractual-user" class="form-input" placeholder="Physical Holder / Contractor (Optional)">
+                        <input id="in-desig" class="form-input" placeholder="Designation" readonly style="background:rgba(66,133,244,0.06); cursor:default;">
+                        <input id="in-dept" class="form-input" placeholder="Department" readonly style="background:rgba(66,133,244,0.06); cursor:default;">
+                        <input id="in-year" type="number" class="form-input" placeholder="Year of Purchase (YYYY)" min="2000" max="2026">
+                        <input id="in-kva" class="form-input hidden" placeholder="KVA Rating (UPS only)">
+                        <input id="in-warranty" class="form-input" placeholder="Warranty Expiry (YYYY-MM-DD)">
+                        <input id="in-remark" class="form-input form-full" placeholder="Remark">
+                        <div class="form-full" style="display:flex; gap:10px;">
+                            <button id="btn-save-asset" onclick="saveAsset()" class="btn btn-primary">💾 Register
+                                Asset</button>
+                            <button id="btn-cancel-edit" onclick="resetForm()" class="btn btn-danger btn-sm hidden"
+                                style="width:auto; padding:12px 16px;">✕ Cancel</button>
+                            <button onclick="openWizard()" class="btn btn-ghost btn-sm"
+                                style="width:auto; padding:12px 16px;">🧙 Multi-Asset Wizard</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inventory Table -->
+                <div class="glass-card" style="padding:0; overflow:hidden;">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>SR</th>
+                                    <th data-sort="name" onclick="sortInventory('name')" class="sortable">Asset Type
+                                    </th>
+                                    <th data-sort="tag" onclick="sortInventory('tag')" class="sortable">Asset Tag</th>
+                                    <th data-sort="make" onclick="sortInventory('make')" class="sortable">Make</th>
+                                    <th data-sort="model" onclick="sortInventory('model')" class="sortable">Model</th>
+                                    <th data-sort="serial" onclick="sortInventory('serial')" class="sortable">Serial No.
+                                    </th>
+                                    <th data-sort="ip" onclick="sortInventory('ip')" class="sortable">IP Address</th>
+                                    <th data-sort="hostname" onclick="sortInventory('hostname')"
+                                        class="sortable">Hostname</th>
+                                    <th data-sort="holder" onclick="sortInventory('holder')" class="sortable">Current
+                                        Holder</th>
+                                    <th data-sort="desig" onclick="sortInventory('desig')" class="sortable">Designation
+                                    </th>
+                                    <th data-sort="dept" onclick="sortInventory('dept')" class="sortable">Department
+                                    </th>
+                                    <th data-sort="year" onclick="sortInventory('year')" class="sortable">Year</th>
+                                    <th data-sort="warranty" onclick="sortInventory('warranty')" class="sortable">Warranty</th>
+                                    <th data-sort="status" onclick="sortInventory('status')" class="sortable">Status
+                                    </th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="inventory-table">
+                                <tr>
+                                    <td colspan="15"
+                                        style="text-align:center; padding:40px; color:var(--text-muted); font-style:italic;">
+                                        Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ═══ EMPLOYEE DETAILS ═══ -->
+            <div id="view-employees" class="hidden">
+                <div class="topbar">
+                    <div class="topbar-left">
+                        <h1>Employee Details</h1>
+                        <p>Summary of employees and their assigned assets</p>
+                    </div>
+                    <div class="topbar-right" style="display:flex; gap:10px;">
+                        <select id="employees-sort" class="form-input" style="width:180px; margin:0;" onchange="filterEmployees()">
+                            <option value="default">Default Sort</option>
+                            <option value="name-asc">Name (A-Z)</option>
+                            <option value="name-desc">Name (Z-A)</option>
+                            <option value="dept-asc">Department (A-Z)</option>
+                            <option value="dept-desc">Department (Z-A)</option>
+                            <option value="year-desc">Year (Newest First)</option>
+                            <option value="year-asc">Year (Oldest First)</option>
+                            <option value="designation-year-new">Power + New (Desig + Newest)</option>
+                            <option value="designation-year-old">Power + Old (Desig + Oldest)</option>
+                            <option value="dept-year">Department + Year (Newest)</option>
+                            <option value="designation-asc">Designation (High to Low)</option>
+                            <option value="designation-desc">Designation (Low to High)</option>
+                        </select>
+                        <input type="text" id="employees-search" class="form-input" placeholder="Search by name, dept..." style="width:220px; margin:0;" onkeyup="filterEmployees()">
+                        <button onclick="openEmployeeModal()" class="btn btn-primary btn-sm" style="width:auto; padding: 0 15px;">➕ Add Employee</button>
+                    </div>
+                </div>
+                <!-- Employees Table -->
+                <div class="glass-card" style="padding:0; overflow:hidden;">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Employee Name</th>
+                                    <th>Designation</th>
+                                    <th>Department</th>
+                                    <th>Assigned Assets</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employees-table">
+                                <tr>
+                                    <td colspan="5" style="text-align:center; padding:40px; color:var(--text-muted); font-style:italic;">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ HANDOVER / TAKEOVER ═══ -->
+            <div id="view-handover" class="hidden">
+                <div class="topbar">
+                    <div class="topbar-left">
+                        <h1 id="trans-title">Asset Handover</h1>
+                        <p>Select assets and enter transaction details</p>
+                    </div>
+                    <div class="topbar-right">
+                        <button onclick="submitTransaction('save')" class="btn btn-primary btn-sm">✅ Save
+                            Transaction</button>
+                        <button onclick="submitTransaction('print')" class="btn btn-ghost btn-sm">🖨 Print /
+                            PDF</button>
+                    </div>
+                </div>
+
+                <div class="transaction-split">
+                    <!-- Select Assets -->
+                    <div class="glass-card" style="max-height:600px; display:flex; flex-direction:column;">
+                        <div class="section-title" style="margin-bottom:12px;">1. SELECT ASSETS</div>
+                        <input type="text" id="asset-search" class="form-input" placeholder="Filter assets..."
+                            style="margin-bottom:12px;">
+                        <div id="selectable-assets" class="selectable-list" style="flex:1;"></div>
+                    </div>
+
+                    <!-- Transaction Details -->
+                    <div class="glass-card">
+                        <div class="section-title" style="margin-bottom:16px;">2. TRANSACTION DETAILS</div>
+
+                        <div class="form-grid" style="gap:10px;">
+                            <div>
+                                <label class="form-label">Reference No</label>
+                                <input id="form-ref" class="form-input"
+                                    style="font-family:monospace; color:var(--accent-blue); font-weight:600; margin-bottom:16px;">
+                            </div>
+                            <div>
+                                <label class="form-label">Date</label>
+                                <input id="form-date" type="date" class="form-input" style="margin-bottom:16px;">
+                            </div>
+                        </div>
+
+                        <label class="form-label">Transaction Remark</label>
+                        <input id="form-trans-remark" class="form-input" placeholder="Optional remark for this handover/takeover..." style="margin-bottom:16px;">
+
+                        <!-- Network Identity Section (Handover Only) -->
+                        <div id="network-section" style="border:1px solid rgba(139,92,246,0.2); border-radius:10px; padding:14px; margin-bottom:14px; background:rgba(139,92,246,0.04);">
+                            <div class="section-title" style="font-size:0.65rem; margin-bottom:10px; color:var(--accent-purple);">🌐 NETWORK IDENTITY</div>
+                            <div class="form-grid" style="gap:10px;">
+                                <div>
+                                    <label class="form-label">IP Address</label>
+                                    <input id="form-ip" class="form-input" placeholder="e.g. 192.168.1.50" style="margin-bottom:0;">
+                                </div>
+                                <div>
+                                    <label class="form-label">Hostname</label>
+                                    <input id="form-hostname" class="form-input" placeholder="e.g. VABO-PC-01" style="margin-bottom:0;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Takeover Notice (Takeover Only) -->
+                        <div id="takeover-notice" class="hidden" style="border:1px solid rgba(239,68,68,0.2); border-radius:10px; padding:14px; margin-bottom:14px; background:rgba(239,68,68,0.04); color:var(--accent-red); font-size:0.8rem; display:flex; align-items:center; gap:10px;">
+                            <span>⚠️ <strong>Notice:</strong> IP Address and Hostname will be automatically cleared from these assets upon takeover.</span>
+                        </div>
+
+                        <!-- Employee / Receiver -->
+                        <div style="border:1px solid rgba(66,133,244,0.2); border-radius:10px; padding:14px; margin-bottom:14px; background:rgba(66,133,244,0.04);">
+                            <div class="section-title" style="font-size:0.65rem; margin-bottom:10px; color:var(--accent-blue);">👤 EMPLOYEE / RECEIVER</div>
+                            <input id="form-name" class="form-input" placeholder="Type to search from employee list..." autocomplete="off" style="margin-bottom:10px;">
+                            <input type="hidden" id="form-employee-id">
+                            <div class="form-grid" style="gap:10px;">
+                                <div>
+                                    <label class="form-label">Designation</label>
+                                    <input id="form-desig" class="form-input" placeholder="Auto-filled on selection" readonly
+                                        style="background:rgba(66,133,244,0.06); color:var(--accent-green); cursor:default; margin-bottom:0;">
+                                </div>
+                                <div>
+                                    <label class="form-label">Department</label>
+                                    <input id="form-dept" class="form-input" placeholder="Auto-filled on selection" readonly
+                                        style="background:rgba(66,133,244,0.06); color:var(--accent-green); cursor:default; margin-bottom:0;">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Issuer -->
+                        <div style="border:1px solid rgba(251,191,36,0.2); border-radius:10px; padding:14px; background:rgba(251,191,36,0.04);">
+                            <div class="section-title" style="font-size:0.65rem; margin-bottom:10px; color:var(--accent-amber);">🏢 ISSUER / AUTHORISER</div>
+                            <input id="form-issuer" class="form-input" placeholder="Type to search from employee list..." autocomplete="off"
+                                style="color:var(--accent-amber); font-weight:600; margin-bottom:10px;">
+                            <input type="hidden" id="form-issuer-id">
+                            <div class="form-grid" style="gap:10px;">
+                                <div>
+                                    <label class="form-label">Designation</label>
+                                    <input id="form-issuer-desig" class="form-input" placeholder="Auto-filled on selection" readonly
+                                        style="background:rgba(251,191,36,0.06); color:var(--accent-amber); cursor:default; margin-bottom:0;">
+                                </div>
+                                <div>
+                                    <label class="form-label">Department</label>
+                                    <input id="form-issuer-dept" class="form-input" placeholder="Auto-filled on selection" readonly
+                                        style="background:rgba(251,191,36,0.06); color:var(--accent-amber); cursor:default; margin-bottom:0;">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ HISTORY ═══ -->
+            <div id="view-history" class="hidden">
+                <div class="topbar">
+                    <div class="topbar-left">
+                        <h1>Audit Logs</h1>
+                        <p>Complete transaction history — Admin can edit records</p>
+                    </div>
+                    <div class="topbar-right" style="display:flex; gap:10px;">
+                        <input type="text" id="history-search" class="form-input" placeholder="Search logs..." style="width:240px; margin:0;" oninput="filterHistory()">
+                        <select id="history-type-filter" class="form-input" style="width:160px; margin:0;" onchange="filterHistory()">
+                            <option value="all">All Types</option>
+                            <option value="handover">Handover</option>
+                            <option value="takeover">Takeover</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="glass-card" style="padding:0; overflow:hidden;">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Type</th>
+                                    <th>Assets</th>
+                                    <th>Person</th>
+                                    <th>Reference</th>
+                                    <th>Remark</th>
+                                    <th id="history-actions-col" class="hidden">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-table">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted); font-style:italic;">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ═══ PRINT LOGS ═══ -->
+            <div id="view-print-logs" class="hidden">
+                <div class="topbar">
+                    <div class="topbar-left">
+                        <h1>Print Audit Trail</h1>
+                        <p>History of all print and reprint actions</p>
+                    </div>
+                </div>
+                <div class="glass-card" style="padding:0; overflow:hidden;">
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Action</th>
+                                    <th>Printed By</th>
+                                    <th>System Info</th>
+                                    <th>Ref No.</th>
+                                    <th>Doc Type</th>
+                                </tr>
+                            </thead>
+                            <tbody id="print-logs-table">
+                                <tr>
+                                    <td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted); font-style:italic;">Loading...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Multi-Asset Entry Wizard ═══ -->
+            <div id="view-wizard" class="hidden">
+                <div class="topbar">
+                    <div class="topbar-left">
+                        <h1>Multi-Asset Entry Wizard</h1>
+                        <p id="wizard-step-label">Step 1 of 5 — Employee Information</p>
+                    </div>
+                    <div class="topbar-right">
+                        <button onclick="closeWizard()" class="btn btn-ghost btn-sm">Cancel</button>
+                    </div>
+                </div>
+
+                <div class="glass-card">
+                    <!-- Step Indicator -->
+                    <div id="wizard-steps" style="display:flex; gap:6px; margin-bottom:28px;">
+                        <div class="wizard-step-indicator active" data-step="1">1. Employee</div>
+                        <div class="wizard-step-indicator" data-step="2">2. Categories</div>
+                        <div class="wizard-step-indicator" data-step="3">3. Specifications</div>
+                        <div class="wizard-step-indicator" data-step="4">4. Network</div>
+                        <div class="wizard-step-indicator" data-step="5">5. Review</div>
+                    </div>
+
+                    <!-- Step 1: Employee Info -->
+                    <div id="wizard-step-1" class="wizard-step-content">
+                        <div class="section-title" style="margin-bottom:16px;">EMPLOYEE INFORMATION</div>
+                        <div class="form-grid">
+                            <div style="grid-column:1/-1;">
+                                <label class="form-label">Search Employee <span style="color:var(--accent-red);">*</span></label>
+                                <input id="wizard-emp-name" class="form-input" placeholder="Type to search employee..." autocomplete="off">
+                                <input type="hidden" id="wizard-emp-id">
+                            </div>
+                            <div>
+                                <label class="form-label">Designation</label>
+                                <input id="wizard-emp-desig" class="form-input" readonly style="background:rgba(66,133,244,0.06); cursor:default;">
+                            </div>
+                            <div>
+                                <label class="form-label">Department</label>
+                                <input id="wizard-emp-dept" class="form-input" readonly style="background:rgba(66,133,244,0.06); cursor:default;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Hardware Categories -->
+                    <div id="wizard-step-2" class="wizard-step-content hidden">
+                        <div class="section-title" style="margin-bottom:16px;">HARDWARE CATEGORIES</div>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">Select the types of hardware to assign</p>
+                        <div id="wizard-category-grid" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap:12px;"></div>
+                    </div>
+
+                    <!-- Step 3: Technical Specifications -->
+                    <div id="wizard-step-3" class="wizard-step-content hidden">
+                        <div class="section-title" style="margin-bottom:16px;">SPECIFICATIONS & SERIAL NUMBERS</div>
+                        <div id="wizard-asset-forms" style="display:flex; flex-direction:column; gap:16px;"></div>
+                    </div>
+
+                    <!-- Step 4: Network Context -->
+                    <div id="wizard-step-4" class="wizard-step-content hidden">
+                        <div class="section-title" style="margin-bottom:16px;">SHARED NETWORK CONTEXT</div>
+                        <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">Enter the IP and Hostname shared by all assets in this batch</p>
+                        <div class="form-grid">
+                            <div>
+                                <label class="form-label">IP Address</label>
+                                <input id="wizard-ip" class="form-input" placeholder="e.g. 192.168.1.50">
+                            </div>
+                            <div>
+                                <label class="form-label">Hostname</label>
+                                <input id="wizard-hostname" class="form-input" placeholder="e.g. VABO-PC-01">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Step 5: Review & Save -->
+                    <div id="wizard-step-5" class="wizard-step-content hidden">
+                        <div class="section-title" style="margin-bottom:16px;">REVIEW & SAVE</div>
+                        <div id="wizard-review-content" style="max-height:400px; overflow-y:auto;"></div>
+                    </div>
+
+                    <!-- Navigation Buttons -->
+                    <div style="display:flex; justify-content:space-between; margin-top:28px; padding-top:16px; border-top:1px solid var(--glass-border);">
+                        <button id="wizard-prev-btn" onclick="wizardPrev()" class="btn btn-ghost btn-sm" style="display:none;">Previous</button>
+                        <div style="flex:1;"></div>
+                        <button id="wizard-next-btn" onclick="wizardNext()" class="btn btn-primary btn-sm">Next</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ═══ Employee Management Modal ═══ -->
+    <div id="employee-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 450px;">
+            <div class="modal-header">
+                <h2 id="employee-modal-title">👤 Add Employee</h2>
+                <button onclick="closeEmployeeModal()" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="employee-form" onsubmit="saveEmployee(event)">
+                    <input type="hidden" id="emp-id">
+                    
+                    <label class="form-label">Full Name <span style="color:var(--accent-red);">*</span></label>
+                    <input type="text" id="emp-name" class="form-input" placeholder="e.g. Rajesh Kumar" required>
+
+                    <label class="form-label">Designation <span style="color:var(--accent-red);">*</span></label>
+                    <input type="text" id="emp-designation" class="form-input" placeholder="e.g. Manager" required>
+
+                    <label class="form-label">Department <span style="color:var(--accent-red);">*</span></label>
+                    <input type="text" id="emp-department" class="form-input" placeholder="e.g. IT / CNS" required>
+
+                    <div style="display:flex; gap:10px; margin-top:20px;">
+                        <button type="button" onclick="closeEmployeeModal()" class="btn btn-ghost" style="flex:1;">Cancel</button>
+                        <button type="submit" id="emp-save-btn" class="btn btn-primary" style="flex:1;">Save Employee</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Audit Edit Modal ═══ -->
+    <div id="audit-edit-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 720px;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; background:rgba(248,113,113,0.1); border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--accent-red);">
+                        <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+                    </div>
+                    <div>
+                        <h2 style="margin:0;">Edit Audit Record</h2>
+                        <p id="audit-edit-meta" style="font-size:0.8rem; color:var(--accent-red); margin:0;">⚠ Admin Only — Changes are permanently tracked</p>
+                    </div>
+                </div>
+                <button onclick="closeAuditEditModal()" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="audit-edit-id">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                    <div>
+                        <label class="form-label">Employee / Receiver Name</label>
+                        <input type="text" id="audit-edit-employee-name" class="form-input" placeholder="Name">
+                    </div>
+                    <div>
+                        <label class="form-label">Employee Designation</label>
+                        <input type="text" id="audit-edit-employee-desig" class="form-input" placeholder="Designation">
+                    </div>
+                    <div>
+                        <label class="form-label">Employee Department</label>
+                        <input type="text" id="audit-edit-employee-dept" class="form-input" placeholder="Department">
+                    </div>
+                    <div>
+                        <label class="form-label">Issuer Name</label>
+                        <input type="text" id="audit-edit-issuer-name" class="form-input" placeholder="Issuer">
+                    </div>
+                    <div>
+                        <label class="form-label">Issuer Designation</label>
+                        <input type="text" id="audit-edit-issuer-desig" class="form-input" placeholder="Issuer Desig">
+                    </div>
+                    <div>
+                        <label class="form-label">Issuer Department</label>
+                        <input type="text" id="audit-edit-issuer-dept" class="form-input" placeholder="Issuer Dept">
+                    </div>
+                    <div>
+                        <label class="form-label">Reference No.</label>
+                        <input type="text" id="audit-edit-ref" class="form-input" placeholder="Ref No">
+                    </div>
+                    <div>
+                        <label class="form-label">Date</label>
+                        <input type="text" id="audit-edit-date" class="form-input">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="form-label">Asset Names (comma-separated)</label>
+                        <input type="text" id="audit-edit-asset-names" class="form-input" placeholder="Asset names">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="form-label">Transaction Remark</label>
+                        <input type="text" id="audit-edit-remark" class="form-input" placeholder="Transaction Remark">
+                    </div>
+                    <div style="grid-column:1/-1;">
+                        <label class="form-label">Timestamp (correct if needed)</label>
+                        <input type="datetime-local" id="audit-edit-timestamp" class="form-input">
+                    </div>
+                </div>
+
+                <!-- Change History Section -->
+                <div id="audit-edit-history" style="margin-top:20px; border-top:1px solid var(--glass-border); padding-top:16px; display:none;">
+                    <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:12px;">Change History</div>
+                    <div id="audit-edit-history-list" style="max-height:150px; overflow-y:auto;"></div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button type="button" onclick="closeAuditEditModal()" class="btn btn-ghost" style="flex:1;">Cancel</button>
+                    <button type="button" onclick="submitAuditEdit()" class="btn btn-danger" style="flex:1;">⚠ Update Audit Record</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Employee Trail Modal ═══ -->
+    <div id="emp-trail-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 850px;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div class="header-icon" style="background:rgba(59,130,246,0.1); color:var(--accent-blue);">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
+                    </div>
+                    <div>
+                        <h2 id="emp-trail-title" style="margin:0;">Employee Asset Trail</h2>
+                        <p id="emp-trail-meta" style="margin:0; font-size:0.85rem; color:var(--text-muted);"></p>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="printEmpTrail()" class="btn btn-ghost" style="padding:8px 12px; font-size:0.85rem;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:6px;"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                        Print History
+                    </button>
+                    <button onclick="closeEmpTrailModal()" class="close-btn">&times;</button>
+                </div>
+            </div>
+            <div style="padding: 10px 24px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--glass-border);">
+                <input type="text" id="emp-trail-filter" class="form-input" placeholder="Search in history..." style="margin:0; font-size:0.85rem; height:34px;" oninput="filterEmpTrail()">
+            </div>
+            <div class="modal-body" style="padding: 24px; max-height:75vh; overflow-y:auto;">
+                <div id="emp-trail-current" style="margin-bottom:24px;"></div>
+                <div class="trail-timeline" id="emp-trail-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Asset Trail Modal ═══ -->
+    <div id="trail-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 800px;">
+            <div class="modal-header">
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <div style="width:40px; height:40px; background:rgba(167, 139, 250, 0.1); border-radius:10px; display:flex; align-items:center; justify-content:center; color:var(--accent-purple);">
+                        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+                    </div>
+                    <div>
+                        <h2 id="trail-modal-title" style="margin:0;">Asset History Trail</h2>
+                        <p id="trail-modal-subtitle" style="font-size:0.8rem; color:var(--text-muted); margin:0;">Complete lifecycle tracking</p>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button onclick="printTrail()" class="btn btn-ghost btn-sm" style="width:auto; padding:0 15px;">
+                        <svg viewBox="0 0 24 24" width="16" height="16" style="margin-right:5px;"><path fill="currentColor" d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+                        Print Trail
+                    </button>
+                    <button onclick="closeTrailModal()" class="close-btn">&times;</button>
+                </div>
+            </div>
+            <div style="padding: 10px 24px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--glass-border);">
+                <input type="text" id="trail-filter" class="form-input" placeholder="Search in history..." style="margin:0; font-size:0.85rem; height:34px;" oninput="filterTrail()">
+            </div>
+            <div class="modal-body" style="padding-top:0;">
+                <div id="trail-content" class="trail-container">
+                    <!-- Timeline will be injected here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="import-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 900px;">
+            <div class="modal-header">
+                <h2>📦 CSV Data Import</h2>
+                <button onclick="closeImportModal()" class="close-btn">&times;</button>
+            </div>
+            
+            <div class="modal-body">
+                <div id="import-stats" class="stats-grid" style="margin-bottom: 20px;">
+                    <div class="skeuo-card">
+                        <p class="stat-label">Total Records</p>
+                        <p id="stat-import-total" class="stat-value">0</p>
+                    </div>
+                    <div class="skeuo-card">
+                        <p class="stat-label text-success">Successful</p>
+                        <p id="stat-import-success" class="stat-value text-success">0</p>
+                    </div>
+                    <div class="skeuo-card">
+                        <p class="stat-label text-danger">Failed/Rejected</p>
+                        <p id="stat-import-failed" class="stat-value text-danger">0</p>
+                    </div>
+                </div>
+
+                <div id="import-preview-container" class="preview-table-wrapper">
+                    <table class="data-table" id="import-preview-table">
+                        <thead>
+                            <tr>
+                                <th>Status</th>
+                                <th>Name</th>
+                                <th>Serial</th>
+                                <th>Holder</th>
+                                <th>Designation</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="import-preview-body"></tbody>
+                    </table>
+                </div>
+
+                <div id="import-log" class="import-log hidden">
+                    <h3>Failed Records Log</h3>
+                    <div id="import-log-content"></div>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button id="btn-download-error-log" class="skeuo-btn hidden" style="margin-right: auto;">📥 Download Error Report</button>
+                <button onclick="closeImportModal()" class="skeuo-btn">Cancel</button>
+                <button id="btn-confirm-import" class="skeuo-btn skeuo-btn-primary">Finalize Import</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══ Audit Delete Confirmation Modal ═══ -->
+    <div id="audit-delete-modal" class="modal hidden">
+        <div class="modal-content glass-card" style="max-width: 450px; text-align: center; padding: 30px;">
+            <div style="width: 60px; height: 60px; background: rgba(248,113,113,0.1); color: var(--accent-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+                <svg viewBox="0 0 24 24" width="32" height="32"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+            </div>
+            <h2 style="margin-bottom: 10px;">Confirm Deletion</h2>
+            <p style="color: var(--text-secondary); font-size: 0.95rem; margin-bottom: 20px;">
+                Are you sure you want to delete this audit log record? This action will hide it from normal views.
+            </p>
+            
+            <label class="form-label" style="text-align: left; display: block; margin-bottom: 6px;">Reason for Deletion <span style="color:var(--accent-red);">*</span></label>
+            <input type="text" id="audit-delete-reason" class="form-input" placeholder="e.g. Incorrect data entry" style="margin-bottom: 25px;">
+            
+            <input type="hidden" id="audit-delete-id">
+            
+            <div style="display: flex; gap: 12px;">
+                <button onclick="closeAuditDeleteModal()" class="btn btn-ghost" style="flex: 1;">Cancel</button>
+                <button onclick="submitDeleteAuditLog()" class="btn btn-danger" style="flex: 1;">Yes, Delete</button>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- ═══ Datalists for suggestions ═══ -->
+    <datalist id="holder-suggestions"></datalist>
+    <datalist id="wizard-emp-suggestions"></datalist>
+
+    <script src="/js/utils.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/ui.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+
+</html>
