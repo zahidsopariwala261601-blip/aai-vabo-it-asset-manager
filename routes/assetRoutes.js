@@ -553,18 +553,7 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
         return res.status(400).json({ error: 'Duplicate serial numbers found in the wizard input' });
     }
 
-    // Check for existing serial numbers in DB (case-insensitive)
-    const checkSql = `SELECT name, serial_number, current_user, contractual_user_name FROM assets WHERE LOWER(serial_number) IN (${serials.map(() => '?').join(',')})`;
-    db.all(checkSql, serials, (err, existing) => {
-        if (err) return next(err);
-        if (existing && existing.length > 0) {
-            const details = existing.map(e => {
-                const holder = (e.contractual_user_name && e.contractual_user_name.trim()) ? e.contractual_user_name.trim() : (e.current_user || 'IT Store');
-                return `Asset '${e.name}' with Serial Number '${e.serial_number}' is already registered with ${holder}`;
-            }).join('; ');
-            return res.status(409).json({ error: `Serial number(s) already exist: ${details}` });
-        }
-
+    const proceedWithWizard = () => {
         // All clear — begin transaction
         const currentUser = (employee.name || 'IT Store').trim();
         const status = (currentUser.toLowerCase() === 'it store') ? 'In Stock' : 'Assigned';
@@ -627,6 +616,10 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
                                         ? a.asset_tag.trim()
                                         : await getSequentialTag(employee.department, a.name);
 
+                                    const finalSerial = (a.serial_number && a.serial_number.trim())
+                                        ? a.serial_number.trim()
+                                        : `N/A-${assetTag}`;
+
                                     const insertSql = `INSERT INTO assets (
                                         name, serial_number, asset_tag, charger_serial, monitor_make, monitor_serial,
                                         keyboard_make, mouse_make, make, model, ip_address, hostname,
@@ -639,7 +632,7 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
                                     const itemHostname = (a.hostname && a.hostname.trim()) ? a.hostname.trim() : (hostname || '');
 
                                     const params = [
-                                        a.name || '', a.serial_number || '', assetTag || '', a.charger_serial || '',
+                                        a.name || '', finalSerial, assetTag || '', a.charger_serial || '',
                                         a.monitor_make || '', a.monitor_serial || '', a.keyboard_make || '', a.mouse_make || '',
                                         a.make || '', a.model || '', itemIp, itemHostname,
                                         currentUser, contractualUser, employee.department || '', employee.designation || '',
@@ -689,7 +682,7 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
                             } catch (loopErr) {
                                 return db.run('ROLLBACK', () => {
                                     if (loopErr.message && loopErr.message.includes('UNIQUE constraint failed: assets.serial_number')) {
-                                        return res.status(409).json({ error: 'Asset with this serial number already exists' });
+                                         return res.status(409).json({ error: 'Asset with this serial number already exists' });
                                     }
                                     next(loopErr);
                                 });
@@ -699,7 +692,24 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
                 );
             });
         });
-    });
+    };
+
+    if (serials.length > 0) {
+        const checkSql = `SELECT name, serial_number, current_user, contractual_user_name FROM assets WHERE LOWER(serial_number) IN (${serials.map(() => '?').join(',')})`;
+        db.all(checkSql, serials, (err, existing) => {
+            if (err) return next(err);
+            if (existing && existing.length > 0) {
+                const details = existing.map(e => {
+                    const holder = (e.contractual_user_name && e.contractual_user_name.trim()) ? e.contractual_user_name.trim() : (e.current_user || 'IT Store');
+                    return `Asset '${e.name}' with Serial Number '${e.serial_number}' is already registered with ${holder}`;
+                }).join('; ');
+                return res.status(409).json({ error: `Serial number(s) already exist: ${details}` });
+            }
+            proceedWithWizard();
+        });
+    } else {
+        proceedWithWizard();
+    }
 });
 
 // POST /api/assets/bulk — Bulk import (Upsert by serial_number)
