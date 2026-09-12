@@ -6,7 +6,9 @@ const { authenticateToken } = require('../middleware/auth');
 // Middleware to validate asset data
 const validateAsset = (req, res, next) => {
     const { name, serial_number } = req.body;
-    if (!name || !serial_number) {
+    const nameLower = (name || '').toLowerCase();
+    const isKbOrMouse = nameLower.includes('keyboard') || nameLower.includes('mouse');
+    if (!name || (!serial_number && !isKbOrMouse)) {
         return res.status(400).json({ error: 'Name and Serial Number are required' });
     }
     next();
@@ -22,6 +24,7 @@ function requireAdmin(req, res, next) {
 
 // Valid lifecycle statuses
 const VALID_STATUSES = ['In Stock', 'Assigned', 'Faulty', 'Scrap'];
+const toUpper = str => typeof str === 'string' ? str.trim().toUpperCase() : (str || '');
 
 // Asset Tag auto-generation: VABO-IT/CNS-{DEPT}-{TYPE}-{SEQ}
 function generateAssetTag(dept, type, callback) {
@@ -98,13 +101,16 @@ router.get('/all', authenticateToken, (req, res, next) => {
     });
 });
 
-// GET /api/assets/stats — Basic stats
+// GET /api/assets/stats — Inventory aggregates
 router.get('/stats', authenticateToken, (req, res, next) => {
     const sqlMain = `
         SELECT 
-            (SELECT COUNT(*) FROM assets) as total,
-            (SELECT COUNT(*) FROM assets WHERE status = 'In Stock') as inStock,
-            (SELECT COUNT(*) FROM assets WHERE status = 'Assigned') as assigned
+            COUNT(*) as total,
+            SUM(CASE WHEN status = 'In Stock' THEN 1 ELSE 0 END) as inStock,
+            SUM(CASE WHEN status = 'Assigned' THEN 1 ELSE 0 END) as assigned,
+            SUM(CASE WHEN status = 'Faulty' THEN 1 ELSE 0 END) as faulty,
+            SUM(CASE WHEN status = 'Scrap' THEN 1 ELSE 0 END) as scrap
+        FROM assets
     `;
     const sqlCategories = `SELECT name, COUNT(*) as count FROM assets GROUP BY name`;
 
@@ -115,31 +121,54 @@ router.get('/stats', authenticateToken, (req, res, next) => {
             if (err) return next(err);
             
             const stats = {
-                ...row,
+                total: row?.total || 0,
+                inStock: row?.inStock || 0,
+                assigned: row?.assigned || 0,
+                faulty: row?.faulty || 0,
+                scrap: row?.scrap || 0,
                 categories: {}
             };
             
-            categories.forEach(c => {
-                if (c.name) {
-                    stats.categories[c.name] = c.count;
-                }
-            });
+            if (categories) {
+                categories.forEach(c => {
+                    if (c.name) {
+                        stats.categories[c.name] = c.count;
+                    }
+                });
+            }
             
             res.json(stats);
         });
     });
 });
 
-// GET /api/assets/export — Export to CSV
+// GET /api/assets/export — Export as CSV
 router.get('/export', authenticateToken, (req, res, next) => {
-    db.all(`SELECT * FROM assets ORDER BY id ASC`, [], (err, rows) => {
+    const sql = `
+        SELECT a.*, 
+               COALESCE(e.name, a.current_user) as current_user_name,
+               COALESCE(e.department, a.assigned_dept) as dept,
+               COALESCE(e.designation, a.assigned_desig) as desig
+        FROM assets a
+        LEFT JOIN employees e ON a.employee_id = e.id
+        ORDER BY a.id ASC
+    `;
+
+    db.all(sql, [], (err, rows) => {
         if (err) return next(err);
 
-        let csv = 'ID,Asset_Tag,Asset Type,Serial,Charger_Serial,Monitor_Make,Monitor_Serial,Keyboard_Make,Mouse_Make,Make,Model,IP,Hostname,Holder,Physical_Asset_Holder,Department,Designation,Year_of_Purchase\n';
+        const q = str => `"${(str || '').toString().replace(/"/g, '""')}"`;
+        const headers = [
+            'ID', 'Asset_Tag', 'Asset Type', 'Serial', 'Charger_Serial',
+            'Monitor_Make', 'Monitor_Serial', 'Keyboard_Make', 'Mouse_Make',
+            'Make', 'Model', 'IP', 'Hostname', 'Holder',
+            'Physical_Asset_Holder', 'Department', 'Designation', 'Year_of_Purchase'
+        ];
+
+        let csv = headers.join(',') + '\n';
         rows.forEach(a => {
-            const q = v => `"${(v === null || v === undefined ? '' : String(v)).replace(/"/g, '""')}"`;
             const row = [
-                a.id !== undefined && a.id !== null ? a.id : '',
+                a.id,
                 q(a.asset_tag),
                 q(a.name),
                 q(a.serial_number),
@@ -152,10 +181,10 @@ router.get('/export', authenticateToken, (req, res, next) => {
                 q(a.model),
                 q(a.ip_address),
                 q(a.hostname),
-                q(a.current_user),
+                q(a.current_user_name || a.current_user),
                 q(a.contractual_user_name),
-                q(a.assigned_dept),
-                q(a.assigned_desig),
+                q(a.dept || a.assigned_dept),
+                q(a.desig || a.assigned_desig),
                 a.year_of_purchase || ''
             ];
             csv += row.join(',') + '\n';
@@ -491,8 +520,10 @@ router.post('/wizard', authenticateToken, (req, res, next) => {
         return res.status(400).json({ error: 'Employee info and at least one asset are required' });
     }
 
-    // Check for duplicate serial numbers in input
-    const serials = wizardAssets.map(a => (a.serial_number || '').trim().toLowerCase());
+    // Check for duplicate serial numbers in input (only for provided serial numbers)
+    const serials = wizardAssets
+        .map(a => (a.serial_number || '').trim().toLowerCase())
+        .filter(s => s.length > 0);
     const uniqueSerials = new Set(serials);
     if (uniqueSerials.size !== serials.length) {
         return res.status(400).json({ error: 'Duplicate serial numbers found in the wizard input' });

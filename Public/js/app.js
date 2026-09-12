@@ -604,7 +604,12 @@ function checkAssetType() {
     const monSerial = document.getElementById('in-monitor-serial');
     const keyboardMake = document.getElementById('in-keyboard-make');
     const mouseMake = document.getElementById('in-mouse-make');
+    const serialInput = document.getElementById('in-serial');
+    const modelInput = document.getElementById('in-model');
     const kva = document.getElementById('in-kva');
+
+    const isKbOrMouse = name.includes('keyboard') || name.includes('mouse');
+    const isUps = name.includes('ups');
 
     // Charger — laptops only
     charger.classList.toggle('hidden', !name.includes('laptop'));
@@ -622,21 +627,35 @@ function checkAssetType() {
         monSerial.classList.remove('input-highlight');
     }
 
-    // Keyboard/Mouse — PC/Desktop/Laptop
+    // Keyboard/Mouse makes — PC/Desktop/Laptop
     const showKbMouse = name.includes('pc') || name.includes('desktop') || name.includes('computer') || name.includes('laptop') || name.includes('aio');
     keyboardMake.classList.toggle('hidden', !showKbMouse);
     mouseMake.classList.toggle('hidden', !showKbMouse);
 
-    // KVA — UPS only
-    kva.classList.toggle('hidden', !name.includes('ups'));
-    if (name.includes('ups')) kva.classList.add('input-highlight');
+    // Model field — hidden for UPS, Keyboard, Mouse (UPS uses KVA Rating instead of Model)
+    modelInput.classList.toggle('hidden', isUps || isKbOrMouse);
+
+    // KVA — UPS only (replaces Model for UPS)
+    kva.classList.toggle('hidden', !isUps);
+    if (isUps) kva.classList.add('input-highlight');
     else kva.classList.remove('input-highlight');
+
+    // Serial placeholder update for Keyboard / Mouse (not required)
+    if (isKbOrMouse) {
+        serialInput.placeholder = "Serial No. (Optional)";
+    } else {
+        serialInput.placeholder = "Serial No.";
+    }
 }
 
 async function saveAsset() {
     const name = document.getElementById('in-name').value.trim();
     const serial = document.getElementById('in-serial').value.trim();
-    if (!name || !serial) return toast('Name and Serial Number are required', 'warning');
+    const nameLower = name.toLowerCase();
+    const isKbOrMouse = nameLower.includes('keyboard') || nameLower.includes('mouse');
+
+    if (!name) return toast('Asset Name is required', 'warning');
+    if (!serial && !isKbOrMouse) return toast('Serial Number is required', 'warning');
 
     const holder = document.getElementById('in-holder').value.trim();
     const data = {
@@ -2144,9 +2163,12 @@ function supportsNetworkAndTag(cat) {
 function buildWizardAssetForms() {
     const container = document.getElementById('wizard-asset-forms');
     container.innerHTML = wizardSelectedCategories.map((cat, i) => {
+        const catLower = cat.toLowerCase();
         const hasNetAndTag = supportsNetworkAndTag(cat);
-        const isLaptop = cat.toLowerCase().includes('laptop');
-        const isPcAio = cat.toLowerCase().includes('pc') || cat.toLowerCase().includes('aio');
+        const isLaptop = catLower.includes('laptop');
+        const isPcAio = catLower.includes('pc') || catLower.includes('aio');
+        const isKbOrMouse = catLower.includes('keyboard') || catLower.includes('mouse');
+        const isUps = catLower.includes('ups');
 
         return `
         <div style="border:1px solid var(--glass-border); border-radius:10px; padding:16px; background:rgba(255,255,255,0.02);">
@@ -2157,17 +2179,25 @@ function buildWizardAssetForms() {
             
             <div class="form-grid" style="gap:10px;">
                 <div>
-                    <label class="form-label" style="font-size:0.78rem;">Serial Number <span style="color:var(--accent-red);">*</span></label>
-                    <input class="form-input wiz-serial" data-idx="${i}" placeholder="e.g. SN-123456" required>
+                    <label class="form-label" style="font-size:0.78rem;">Serial Number ${isKbOrMouse ? '<span style="color:var(--text-muted); font-weight:400;">(Optional)</span>' : '<span style="color:var(--accent-red);">*</span>'}</label>
+                    <input class="form-input wiz-serial" data-idx="${i}" placeholder="${isKbOrMouse ? 'Optional' : 'e.g. SN-123456'}" ${isKbOrMouse ? '' : 'required'}>
                 </div>
                 <div>
                     <label class="form-label" style="font-size:0.78rem;">Make</label>
-                    <input class="form-input wiz-make" data-idx="${i}" placeholder="e.g. Dell / HP / Lenovo">
+                    <input class="form-input wiz-make" data-idx="${i}" placeholder="e.g. Dell / HP / Logitech">
                 </div>
+
+                ${isUps ? `
+                <div>
+                    <label class="form-label" style="font-size:0.78rem;">KVA Rating</label>
+                    <input class="form-input wiz-kva" data-idx="${i}" id="wiz-kva-${i}" placeholder="e.g. 1 KVA / 2 KVA / 600 VA">
+                </div>` : ''}
+
+                ${(!isKbOrMouse && !isUps) ? `
                 <div>
                     <label class="form-label" style="font-size:0.78rem;">Model</label>
                     <input class="form-input wiz-model" data-idx="${i}" placeholder="e.g. Latitude 5540">
-                </div>
+                </div>` : ''}
 
                 ${isLaptop ? `
                 <div>
@@ -2220,12 +2250,18 @@ function buildWizardReview() {
     const physicalHolder = document.getElementById('wizard-physical-holder')?.value.trim() || '';
 
     let assetsHtml = wizardSelectedCategories.map((cat, i) => {
-        const serial = document.querySelector(`.wiz-serial[data-idx="${i}"]`)?.value.trim() || 'No serial';
-        const make = document.querySelector(`.wiz-make[data-idx="${i}"]`)?.value.trim() || '-';
-        const model = document.querySelector(`.wiz-model[data-idx="${i}"]`)?.value.trim() || '-';
+        const serial = document.querySelector(`.wiz-serial[data-idx="${i}"]`)?.value.trim() || 'N/A';
+        const make = document.querySelector(`.wiz-make[data-idx="${i}"]`)?.value.trim() || '';
+        const model = document.querySelector(`.wiz-model[data-idx="${i}"]`)?.value.trim() || '';
+        const kva = document.querySelector(`#wiz-kva-${i}`)?.value.trim() || '';
         const ip = document.querySelector(`#wiz-ip-${i}`)?.value.trim() || '';
         const hostname = document.querySelector(`#wiz-hostname-${i}`)?.value.trim() || '';
         const tag = document.querySelector(`#wiz-tag-${i}`)?.value.trim() || '';
+
+        let desc = [];
+        if (make) desc.push(make);
+        if (kva) desc.push(`(${kva})`);
+        else if (model) desc.push(model);
 
         let netTagInfo = [];
         if (tag) netTagInfo.push(`Tag: <strong>${tag}</strong>`);
@@ -2239,7 +2275,7 @@ function buildWizardReview() {
                 <span style="font-size:0.8rem; font-family:monospace; color:var(--text-muted);">${serial}</span>
             </div>
             <div style="font-size:0.8rem; color:var(--text-muted);">
-                ${make} ${model}
+                ${desc.join(' ') || '-'}
             </div>
             ${netTagInfo.length > 0 ? `<div style="font-size:0.78rem; color:var(--accent-green); margin-top:4px;">${netTagInfo.join(' · ')}</div>` : ''}
         </div>`;
@@ -2294,10 +2330,15 @@ function wizardNext() {
         buildWizardAssetForms();
     }
     if (wizardCurrentStep === 3) {
-        // Validate serial numbers
-        const serials = document.querySelectorAll('.wiz-serial');
-        for (let s of serials) {
-            if (!s.value.trim()) return toast('All serial numbers are required', 'warning');
+        // Validate serial numbers for required categories
+        for (let i = 0; i < wizardSelectedCategories.length; i++) {
+            const cat = wizardSelectedCategories[i];
+            const catLower = cat.toLowerCase();
+            const isKbOrMouse = catLower.includes('keyboard') || catLower.includes('mouse');
+            if (!isKbOrMouse) {
+                const s = document.querySelector(`.wiz-serial[data-idx="${i}"]`);
+                if (!s || !s.value.trim()) return toast(`Serial number is required for ${cat}`, 'warning');
+            }
         }
         buildWizardReview();
     }
@@ -2331,6 +2372,7 @@ async function submitWizard() {
         serial_number: document.querySelector(`.wiz-serial[data-idx="${i}"]`)?.value.trim() || '',
         make: document.querySelector(`.wiz-make[data-idx="${i}"]`)?.value.trim() || '',
         model: document.querySelector(`.wiz-model[data-idx="${i}"]`)?.value.trim() || '',
+        kva: document.querySelector(`#wiz-kva-${i}`)?.value.trim() || '',
         charger_serial: document.querySelector(`#wiz-charger-${i}`)?.value.trim() || '',
         monitor_make: document.querySelector(`#wiz-monmake-${i}`)?.value.trim() || '',
         monitor_serial: document.querySelector(`#wiz-monserial-${i}`)?.value.trim() || '',
