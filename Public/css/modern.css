@@ -1,4 +1,17 @@
 /* Shared visual layer: airport operations workspace. No external UI libraries. */
+/* ALL DETAILS WILL BE IN CAPITAL LETTERS — DOESN'T MATTER CAPS ON OR OFF */
+input:not([type="password"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+textarea,
+select,
+.form-input {
+    text-transform: uppercase;
+}
+input::placeholder,
+textarea::placeholder,
+.form-input::placeholder {
+    text-transform: none;
+}
+
 :root {
     --bg-primary: #0a111e;
     --bg-secondary: #111d2e;

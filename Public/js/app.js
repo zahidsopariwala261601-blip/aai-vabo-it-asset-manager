@@ -89,6 +89,25 @@ function toggleTheme() {
 
 // ─── Init ──────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
+    // Global Auto-Uppercase for all text input fields (doesn't matter Caps Lock on or off)
+    document.addEventListener('input', event => {
+        const el = event.target;
+        if (el && el.tagName && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA')) {
+            const type = (el.type || 'text').toLowerCase();
+            if (!['password', 'file', 'checkbox', 'radio', 'hidden', 'submit', 'button', 'color', 'date', 'datetime-local'].includes(type)) {
+                const start = el.selectionStart;
+                const end = el.selectionEnd;
+                const upper = el.value.toUpperCase();
+                if (el.value !== upper) {
+                    el.value = upper;
+                    if (start !== null && end !== null) {
+                        try { el.setSelectionRange(start, end); } catch (e) {}
+                    }
+                }
+            }
+        }
+    });
+
     document.addEventListener('keydown', event => {
         if (!document.body.classList.contains('navigation-open')) return;
         if (event.key === 'Escape') setNavigation(false);

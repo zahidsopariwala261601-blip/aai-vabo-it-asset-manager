@@ -6,6 +6,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 /* ─── CSS Variables ─────────────────────────────────────────────── */
+/* ALL DETAILS WILL BE IN CAPITAL LETTERS — DOESN'T MATTER CAPS ON OR OFF */
+input:not([type="password"]):not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]),
+textarea,
+select,
+.form-input {
+    text-transform: uppercase;
+}
+input::placeholder,
+textarea::placeholder,
+.form-input::placeholder {
+    text-transform: none;
+}
+
 :root {
     --bg-primary: #0f1117;
     --bg-secondary: #1a1d27;
