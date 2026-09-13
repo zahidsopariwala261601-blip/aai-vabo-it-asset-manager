@@ -1,20 +1,39 @@
 const fs = require('fs');
 const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 
-const DEFAULT_DB_PATH = path.resolve(__dirname, '..', 'database.db');
-const DB_PATH = path.resolve(process.cwd(), process.env.DB_PATH || DEFAULT_DB_PATH);
+const dbType = (process.env.DB_TYPE || '').toLowerCase();
+const pgConnectionString = process.env.DATABASE_URL || process.env.SUPABASE_DATABASE_URL;
 
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+let isPgMode = (dbType === 'supabase' || dbType === 'postgres' || !!pgConnectionString);
 
-const rawDb = new sqlite3.Database(DB_PATH, (err) => {
-    if (err) {
-        console.error('Failed to open SQLite database:', err.message);
-    } else {
-        rawDb.run('PRAGMA foreign_keys = ON;');
-    }
-});
+let pgPool = null;
+let rawDb = null;
+
+if (isPgMode && pgConnectionString) {
+    console.log('Database Mode: SUPABASE / POSTGRESQL');
+    pgPool = new Pool({
+        connectionString: pgConnectionString,
+        ssl: process.env.DB_SSL === 'false' ? false : { rejectUnauthorized: false }
+    });
+} else {
+    isPgMode = false;
+    console.log('Database Mode: LOCAL SQLITE');
+    const DEFAULT_DB_PATH = path.resolve(__dirname, '..', 'database.db');
+    const DB_PATH = path.resolve(process.cwd(), process.env.DB_PATH || DEFAULT_DB_PATH);
+
+    fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+
+    rawDb = new sqlite3.Database(DB_PATH, (err) => {
+        if (err) {
+            console.error('Failed to open SQLite database:', err.message);
+        } else {
+            rawDb.run('PRAGMA foreign_keys = ON;');
+        }
+    });
+}
 
 function normalizeArgs(params, callback) {
     if (typeof params === 'function') {
@@ -37,6 +56,28 @@ function normalizeArgs(params, callback) {
     };
 }
 
+// Convert SQLite query syntax to PostgreSQL syntax
+function convertSqlToPg(query) {
+    if (typeof query !== 'string') return query;
+
+    let idx = 1;
+    let converted = query.replace(/\?/g, () => `$${idx++}`);
+
+    converted = converted
+        .replace(/datetime\('now'\)/gi, 'CURRENT_TIMESTAMP')
+        .replace(/INSERT OR IGNORE INTO/gi, 'INSERT INTO')
+        .replace(/LIKE/g, 'ILIKE');
+
+    if (query.toUpperCase().includes('INSERT OR IGNORE INTO EMPLOYEES')) {
+        converted += ' ON CONFLICT (name) DO NOTHING';
+    } else if (query.toUpperCase().includes('INSERT OR IGNORE INTO')) {
+        converted += ' ON CONFLICT DO NOTHING';
+    }
+
+    return converted;
+}
+
+// SQLite transaction queue
 const txQueue = [];
 let isTxActive = false;
 
@@ -69,18 +110,30 @@ function processTxQueue() {
 }
 
 function beginTransaction(callback) {
-    txQueue.push({ callback: typeof callback === 'function' ? callback : () => {} });
-    processTxQueue();
+    if (isPgMode) {
+        pgPool.query('BEGIN', (err) => {
+            if (typeof callback === 'function') callback(err);
+        });
+    } else {
+        txQueue.push({ callback: typeof callback === 'function' ? callback : () => {} });
+        processTxQueue();
+    }
 }
 
 function endTransaction(type, callback) {
-    rawDb.run(type, function (err) {
-        isTxActive = false;
-        if (typeof callback === 'function') {
-            callback.call(this, err);
-        }
-        processTxQueue();
-    });
+    if (isPgMode) {
+        pgPool.query(type, (err) => {
+            if (typeof callback === 'function') callback(err);
+        });
+    } else {
+        rawDb.run(type, function (err) {
+            isTxActive = false;
+            if (typeof callback === 'function') {
+                callback.call(this, err);
+            }
+            processTxQueue();
+        });
+    }
 }
 
 function commit(callback) {
@@ -94,6 +147,7 @@ function rollback(callback) {
 function run(query, params, callback) {
     const normalized = normalizeArgs(params, callback);
     const trimmed = typeof query === 'string' ? query.trim().toUpperCase() : '';
+
     if (trimmed === 'BEGIN TRANSACTION' || trimmed === 'BEGIN') {
         return beginTransaction(normalized.callback);
     }
@@ -103,23 +157,56 @@ function run(query, params, callback) {
     if (trimmed === 'ROLLBACK') {
         return rollback(normalized.callback);
     }
-    rawDb.run(query, ...normalized.params, function (err) {
-        normalized.callback.call(this, err);
-    });
+
+    if (isPgMode) {
+        let pgSql = convertSqlToPg(query);
+
+        if (trimmed.startsWith('INSERT INTO') && !pgSql.toUpperCase().includes('RETURNING')) {
+            pgSql += ' RETURNING id';
+        }
+
+        pgPool.query(pgSql, normalized.params, function (err, res) {
+            const context = {
+                lastID: res?.rows?.[0]?.id || null,
+                changes: res?.rowCount || 0
+            };
+            normalized.callback.call(context, err);
+        });
+    } else {
+        rawDb.run(query, ...normalized.params, function (err) {
+            normalized.callback.call(this, err);
+        });
+    }
 }
 
 function get(query, params, callback) {
     const normalized = normalizeArgs(params, callback);
-    rawDb.get(query, ...normalized.params, (err, row) => {
-        normalized.callback(err, row);
-    });
+
+    if (isPgMode) {
+        const pgSql = convertSqlToPg(query);
+        pgPool.query(pgSql, normalized.params, (err, res) => {
+            normalized.callback(err, res?.rows?.[0] || undefined);
+        });
+    } else {
+        rawDb.get(query, ...normalized.params, (err, row) => {
+            normalized.callback(err, row);
+        });
+    }
 }
 
 function all(query, params, callback) {
     const normalized = normalizeArgs(params, callback);
-    rawDb.all(query, ...normalized.params, (err, rows) => {
-        normalized.callback(err, rows);
-    });
+
+    if (isPgMode) {
+        const pgSql = convertSqlToPg(query);
+        pgPool.query(pgSql, normalized.params, (err, res) => {
+            normalized.callback(err, res?.rows || []);
+        });
+    } else {
+        rawDb.all(query, ...normalized.params, (err, rows) => {
+            normalized.callback(err, rows);
+        });
+    }
 }
 
 const db = {
@@ -129,13 +216,44 @@ const db = {
     beginTransaction,
     commit,
     rollback,
-    prepare: rawDb.prepare.bind(rawDb),
-    serialize: rawDb.serialize.bind(rawDb),
-    close: rawDb.close.bind(rawDb),
-    exec: rawDb.exec.bind(rawDb)
+    prepare: (query) => {
+        if (isPgMode) {
+            return {
+                run: (params, callback) => run(query, params, callback),
+                finalize: (cb) => { if (cb) cb(); }
+            };
+        }
+        return rawDb.prepare(query);
+    },
+    serialize: (fn) => {
+        if (isPgMode) {
+            if (typeof fn === 'function') fn();
+        } else {
+            rawDb.serialize(fn);
+        }
+    },
+    close: (cb) => {
+        if (isPgMode) {
+            pgPool.end(cb);
+        } else {
+            rawDb.close(cb);
+        }
+    },
+    exec: (sql, cb) => {
+        if (isPgMode) {
+            pgPool.query(sql, (err) => { if (cb) cb(err); });
+        } else {
+            rawDb.exec(sql, cb);
+        }
+    }
 };
 
 function initializeDatabase() {
+    if (isPgMode) {
+        console.log('Connected to Supabase PostgreSQL database.');
+        return Promise.resolve();
+    }
+
     const schema = `
         PRAGMA journal_mode = WAL;
         PRAGMA foreign_keys = ON;
@@ -243,7 +361,7 @@ function initializeDatabase() {
 
                 // Seed employees from existing assets and transactions if empty
                 rawDb.get('SELECT COUNT(*) as count FROM employees', [], (err, row) => {
-                    if (!err && row.count === 0) {
+                    if (!err && row && row.count === 0) {
                         const seedSql = `
                             INSERT OR IGNORE INTO employees (name, designation, department)
                             SELECT DISTINCT current_user, assigned_desig, assigned_dept FROM assets 
@@ -263,57 +381,30 @@ function initializeDatabase() {
                     if (pragmaErr) return reject(pragmaErr);
 
                     const hasHostname = columns.some(c => c.name === 'hostname');
-                    const hasYear     = columns.some(c => c.name === 'year_of_purchase');
 
-                    // Migrate transactions table — add issuer_desig/issuer_dept if missing
+                    // Migrate transactions table — add missing columns
                     rawDb.all('PRAGMA table_info(transactions)', (tErr, tCols) => {
-                        if (!tErr) {
+                        if (!tErr && tCols) {
                             const names = tCols.map(c => c.name);
-                            if (!names.includes('issuer_desig')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN issuer_desig TEXT DEFAULT ''`);
-                            }
-                            if (!names.includes('issuer_dept')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN issuer_dept TEXT DEFAULT ''`);
-                            }
-                            if (!names.includes('edit_history')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN edit_history TEXT DEFAULT '[]'`);
-                            }
-                            if (!names.includes('last_edited_by')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN last_edited_by TEXT DEFAULT ''`);
-                            }
-                            if (!names.includes('last_edited_at')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN last_edited_at DATETIME`);
-                            }
-                            if (!names.includes('is_deleted')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN is_deleted INTEGER DEFAULT 0`);
-                            }
-                            if (!names.includes('deleted_by')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN deleted_by TEXT DEFAULT ''`);
-                            }
-                            if (!names.includes('deleted_at')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN deleted_at DATETIME`);
-                            }
-                            if (!names.includes('delete_reason')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN delete_reason TEXT DEFAULT ''`);
-                            }
-                            if (!names.includes('remark')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN remark TEXT DEFAULT ''`);
-                            }
-                            if (!names.includes('employee_id')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN employee_id INTEGER REFERENCES employees(id)`);
-                            }
-                            if (!names.includes('issuer_id')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN issuer_id INTEGER REFERENCES employees(id)`);
-                            }
-                            if (!names.includes('is_protected')) {
-                                rawDb.run(`ALTER TABLE transactions ADD COLUMN is_protected INTEGER DEFAULT 0`);
-                            }
+                            if (!names.includes('issuer_desig')) rawDb.run(`ALTER TABLE transactions ADD COLUMN issuer_desig TEXT DEFAULT ''`);
+                            if (!names.includes('issuer_dept')) rawDb.run(`ALTER TABLE transactions ADD COLUMN issuer_dept TEXT DEFAULT ''`);
+                            if (!names.includes('edit_history')) rawDb.run(`ALTER TABLE transactions ADD COLUMN edit_history TEXT DEFAULT '[]'`);
+                            if (!names.includes('last_edited_by')) rawDb.run(`ALTER TABLE transactions ADD COLUMN last_edited_by TEXT DEFAULT ''`);
+                            if (!names.includes('last_edited_at')) rawDb.run(`ALTER TABLE transactions ADD COLUMN last_edited_at DATETIME`);
+                            if (!names.includes('is_deleted')) rawDb.run(`ALTER TABLE transactions ADD COLUMN is_deleted INTEGER DEFAULT 0`);
+                            if (!names.includes('deleted_by')) rawDb.run(`ALTER TABLE transactions ADD COLUMN deleted_by TEXT DEFAULT ''`);
+                            if (!names.includes('deleted_at')) rawDb.run(`ALTER TABLE transactions ADD COLUMN deleted_at DATETIME`);
+                            if (!names.includes('delete_reason')) rawDb.run(`ALTER TABLE transactions ADD COLUMN delete_reason TEXT DEFAULT ''`);
+                            if (!names.includes('remark')) rawDb.run(`ALTER TABLE transactions ADD COLUMN remark TEXT DEFAULT ''`);
+                            if (!names.includes('employee_id')) rawDb.run(`ALTER TABLE transactions ADD COLUMN employee_id INTEGER REFERENCES employees(id)`);
+                            if (!names.includes('issuer_id')) rawDb.run(`ALTER TABLE transactions ADD COLUMN issuer_id INTEGER REFERENCES employees(id)`);
+                            if (!names.includes('is_protected')) rawDb.run(`ALTER TABLE transactions ADD COLUMN is_protected INTEGER DEFAULT 0`);
                         }
                     });
 
                     // Add missing columns to assets table
                     rawDb.all('PRAGMA table_info(assets)', (aErr, aCols) => {
-                        if (!aErr) {
+                        if (!aErr && aCols) {
                             const names = aCols.map(c => c.name);
                             const newCols = [
                                 'employee_id', 'asset_tag', 'contractual_user_name',
@@ -336,7 +427,6 @@ function initializeDatabase() {
                     const migrateData = () => {
                         return new Promise((migrateResolve) => {
                             rawDb.serialize(() => {
-                                // 1. Populate employees from assets/transactions if they don't exist
                                 const seedSql = `
                                     INSERT OR IGNORE INTO employees (name, designation, department)
                                     SELECT DISTINCT current_user, assigned_desig, assigned_dept FROM assets 
@@ -351,21 +441,18 @@ function initializeDatabase() {
                                 rawDb.run(seedSql, [], (seedErr) => {
                                     if (seedErr) console.error('Migration: Seed employees failed:', seedErr.message);
                                     
-                                    // 2. Link assets.employee_id
                                     rawDb.run(`
                                         UPDATE assets 
                                         SET employee_id = (SELECT id FROM employees WHERE employees.name = assets.current_user)
                                         WHERE employee_id IS NULL AND current_user != 'IT Store'
                                     `);
 
-                                    // 3. Link transactions.employee_id
                                     rawDb.run(`
                                         UPDATE transactions 
                                         SET employee_id = (SELECT id FROM employees WHERE employees.name = transactions.employee_name)
                                         WHERE employee_id IS NULL
                                     `);
 
-                                    // 4. Link transactions.issuer_id
                                     rawDb.run(`
                                         UPDATE transactions 
                                         SET issuer_id = (SELECT id FROM employees WHERE employees.name = transactions.issuer_name)
@@ -379,7 +466,6 @@ function initializeDatabase() {
                                         CREATE INDEX IF NOT EXISTS idx_print_logs_ts ON print_logs(print_timestamp DESC);
                                         CREATE INDEX IF NOT EXISTS idx_assets_tag ON assets(asset_tag);
                                     `);
-                                    console.log('Database migration (ID linking) completed.');
                                     migrateResolve();
                                 });
                             });
@@ -389,28 +475,14 @@ function initializeDatabase() {
                     migrateData().then(() => {
                         continueInit();
                     });
-
-                    function addYear() {
-                        rawDb.run('ALTER TABLE assets ADD COLUMN year_of_purchase INTEGER DEFAULT NULL', (alterErr) => {
-                            if (alterErr) return reject(alterErr);
-                            continueInit();
-                        });
-                    }
-
-                    if (!hasHostname) {
-                        rawDb.run(`ALTER TABLE assets ADD COLUMN hostname TEXT DEFAULT ''`, (alterErr) => {
-                            if (alterErr) return reject(alterErr);
-                            if (hasYear) continueInit();
-                            else addYear();
-                        });
-                    } else {
-                        if (!hasYear) addYear();
-                        else continueInit();
-                    }
                 });
             });
         });
     });
 }
 
-module.exports = { db, initializeDatabase, DB_PATH };
+module.exports = {
+    db,
+    initializeDatabase,
+    isPgMode
+};
